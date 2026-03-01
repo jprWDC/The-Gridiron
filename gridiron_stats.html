@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Gridiron | Stats</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#080808; color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; padding:20px; }
+    header { display:flex; align-items:baseline; gap:14px; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #1c1c1c; }
+    header h1 { font-size:18px; letter-spacing:4px; font-weight:900; text-transform:uppercase; }
+    header .sub { font-size:11px; color:#444; letter-spacing:1px; }
+    .nav-links { margin-left:auto; display:flex; gap:10px; align-items:center; }
+    .nav-links a { font-size:10px; color:#555; text-decoration:none; letter-spacing:1px; font-weight:700; text-transform:uppercase; transition:color .15s; }
+    .nav-links a:hover, .nav-links a.active { color:#f0c830; }
+
+    .pos-tabs { display:flex; gap:4px; margin-bottom:20px; }
+    .pos-tab { padding:6px 18px; background:#111; border:1px solid #222; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:2px; color:#555; cursor:pointer; text-transform:uppercase; transition:all .12s; font-family:inherit; }
+    .pos-tab:hover { border-color:#444; color:#fff; }
+    .pos-tab.active { background:#0d0a00; border-color:#c8a020; color:#f0c830; }
+
+    .lb-wrap { max-width:900px; }
+    .lb-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+    .lb-tbl th { text-align:left; padding:6px 10px; font-size:9px; color:#333; font-weight:700; letter-spacing:1px; border-bottom:1px solid #1e1e1e; }
+    .lb-tbl th:not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align:right; }
+    .lb-tbl td { padding:7px 10px; border-bottom:1px solid #111; color:rgba(255,255,255,0.55); }
+    .lb-tbl td:not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align:right; }
+    .lb-tbl tr:nth-child(even) td { background:#0a0a0a; }
+    .lb-tbl td:first-child { color:#555; font-size:9px; text-align:center; width:28px; }
+    .lb-tbl td:nth-child(2) { color:#fff; font-weight:700; }
+    .lb-tbl td:nth-child(3) { color:#f0c830; font-size:9px; font-weight:700; letter-spacing:1px; }
+    .lb-tbl tr.my-row td { background:#0d0a00 !important; }
+    .lb-tbl tr.my-row td:nth-child(2) { color:#f0c830; }
+    .lb-tbl tr:nth-child(1) td { background:#0e0e00 !important; }
+    .lb-tbl tr:nth-child(2) td { background:#0c0c0c !important; }
+    .lb-tbl tr:nth-child(3) td { background:#0c0c0c !important; }
+    .lb-tbl td a { color:inherit; text-decoration:none; }
+    .lb-tbl td a:hover { color:#f0c830; }
+    .no-data { color:#333; font-size:12px; padding:32px 0; letter-spacing:2px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>The Gridiron</h1>
+  <span class="sub">SEASON 1 &middot; STATS</span>
+  <div class="nav-links">
+    <a href="gridiron_season.html">Season</a>
+    <a href="gridiron_stats.html" class="active">Stats</a>
+    <a href="gridiron_draft.html">Draft</a>
+    <a href="gridiron_probabilities.html">Odds</a>
+  </div>
+</header>
+
+<div class="pos-tabs">
+  <button class="pos-tab active" onclick="showTab('QB')">QB</button>
+  <button class="pos-tab" onclick="showTab('RB')">RB</button>
+  <button class="pos-tab" onclick="showTab('WR')">WR</button>
+  <button class="pos-tab" onclick="showTab('K')">K</button>
+</div>
+
+<div class="lb-wrap" id="lb-wrap"></div>
+
+<script>
+var RAW = {};
+try { RAW = JSON.parse(localStorage.getItem('gridiron_player_stats')||'{}'); } catch(e){}
+
+function allPlayers(pos) {
+  var list=[];
+  Object.keys(RAW).forEach(function(team){
+    Object.keys(RAW[team]).forEach(function(name){
+      var p=RAW[team][name];
+      if(p.pos===pos) list.push(Object.assign({},p,{team:team}));
+    });
+  });
+  return list;
+}
+
+function pctFmt(n,d) { return d?(n/d*100).toFixed(0)+'%':'—'; }
+function avgFmt(n,d) { return d?(n/d).toFixed(1):'—'; }
+
+function qbRating(p) {
+  if(!p.att) return 0;
+  var cmpPct=(p.cmp/p.att);
+  var ypa=(p.yds/p.att);
+  var tdRate=(p.td/p.att);
+  var intRate=(p.int/p.att);
+  var a=Math.max(0,Math.min(2.375,(cmpPct-0.3)*5));
+  var b=Math.max(0,Math.min(2.375,(ypa-3)*0.25));
+  var c=Math.max(0,Math.min(2.375,tdRate*20));
+  var d=Math.max(0,Math.min(2.375,2.375-intRate*25));
+  return ((a+b+c+d)/6*100).toFixed(1);
+}
+
+var currentTab='QB';
+
+function showTab(pos) {
+  currentTab=pos;
+  document.querySelectorAll('.pos-tab').forEach(function(btn){
+    btn.classList.toggle('active', btn.textContent===pos);
+  });
+  render();
+}
+
+function render() {
+  var wrap=document.getElementById('lb-wrap');
+  var players=allPlayers(currentTab);
+  if(!players.length){
+    wrap.innerHTML='<div class="no-data">No stats yet. Play some games first.</div>';
+    return;
+  }
+
+  if(currentTab==='QB'){
+    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
+    var rows=players.map(function(p,i){
+      var isMine=p.team==='BUF';
+      return '<tr class="'+(isMine?'my-row':'')+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
+        '<td>'+p.team+'</td>'+
+        '<td>'+(p.cmp||0)+'</td>'+
+        '<td>'+(p.att||0)+'</td>'+
+        '<td>'+pctFmt(p.cmp||0,p.att||0)+'</td>'+
+        '<td>'+(p.yds||0)+'</td>'+
+        '<td>'+(p.td||0)+'</td>'+
+        '<td>'+(p.int||0)+'</td>'+
+        '<td>'+qbRating(p)+'</td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>CMP</th><th>ATT</th><th>CMP%</th><th>YDS</th><th>TD</th><th>INT</th><th>RTG</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  else if(currentTab==='RB'){
+    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
+    var rows=players.map(function(p,i){
+      var isMine=p.team==='BUF';
+      return '<tr class="'+(isMine?'my-row':'')+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
+        '<td>'+p.team+'</td>'+
+        '<td>'+(p.car||0)+'</td>'+
+        '<td>'+(p.yds||0)+'</td>'+
+        '<td>'+avgFmt(p.yds||0,p.car||0)+'</td>'+
+        '<td>'+(p.td||0)+'</td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>CAR</th><th>YDS</th><th>AVG</th><th>TD</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  else if(currentTab==='WR'){
+    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
+    var rows=players.map(function(p,i){
+      var isMine=p.team==='BUF';
+      return '<tr class="'+(isMine?'my-row':'')+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
+        '<td>'+p.team+'</td>'+
+        '<td>'+(p.rec||0)+'</td>'+
+        '<td>'+(p.tgt||0)+'</td>'+
+        '<td>'+pctFmt(p.rec||0,p.tgt||0)+'</td>'+
+        '<td>'+(p.yds||0)+'</td>'+
+        '<td>'+avgFmt(p.yds||0,p.rec||0)+'</td>'+
+        '<td>'+(p.td||0)+'</td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>REC</th><th>TGT</th><th>CAT%</th><th>YDS</th><th>AVG</th><th>TD</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  else if(currentTab==='K'){
+    players.sort(function(a,b){return (b.fgm||0)-(a.fgm||0);});
+    var rows=players.map(function(p,i){
+      var isMine=p.team==='BUF';
+      var pts=(p.fgm||0)*3;
+      return '<tr class="'+(isMine?'my-row':'')+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
+        '<td>'+p.team+'</td>'+
+        '<td>'+(p.fgm||0)+'</td>'+
+        '<td>'+(p.fga||0)+'</td>'+
+        '<td>'+pctFmt(p.fgm||0,p.fga||0)+'</td>'+
+        '<td>'+pts+'</td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>FGM</th><th>FGA</th><th>PCT</th><th>PTS</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+}
+
+render();
+</script>
+</body>
+</html>

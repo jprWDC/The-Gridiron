@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Gridiron | Draft</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#080808; color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; padding:20px; }
+
+    header { display:flex; align-items:baseline; gap:14px; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #1c1c1c; }
+    header h1 { font-size:18px; letter-spacing:4px; font-weight:900; text-transform:uppercase; }
+    header .sub { font-size:11px; color:#444; letter-spacing:1px; }
+    .nav-links { margin-left:auto; display:flex; gap:10px; align-items:center; }
+    .nav-links a { font-size:10px; color:#555; text-decoration:none; letter-spacing:1px; font-weight:700; text-transform:uppercase; transition:color .15s; }
+    .nav-links a:hover { color:#f0c830; }
+    .nav-links a.active { color:#f0c830; }
+    .dev-badge { font-size:9px; color:#400; background:#1a0000; border:1px solid #3a0000; padding:2px 7px; border-radius:2px; cursor:pointer; letter-spacing:1px; font-weight:700; user-select:none; }
+    .dev-badge:hover { color:#f00; }
+
+    /* ── Page layout ── */
+    .top-layout { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+    .main-layout { display:grid; grid-template-columns:1fr 320px; gap:16px; }
+    @media(max-width:900px) { .top-layout,.main-layout { grid-template-columns:1fr; } }
+
+    /* ── On the Clock ── */
+    .clock-card { background:#111; border:1px solid #222; border-radius:3px; padding:16px; }
+    .clock-label { font-size:9px; font-weight:700; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+    .clock-team { font-size:20px; font-weight:900; color:#fff; letter-spacing:1px; }
+    .clock-team .hl { color:#f0c830; }
+    .clock-round { font-size:10px; color:#555; margin-top:3px; letter-spacing:1px; }
+    .cd-bg { height:3px; background:#1c1c1c; border-radius:2px; overflow:hidden; margin:12px 0 10px; }
+    .cd-fill { height:100%; background:#f0c830; border-radius:2px; transition:width 1s linear; }
+    .cd-time { font-size:9px; color:#555; text-align:right; margin-top:-8px; margin-bottom:8px; letter-spacing:1px; }
+    .pick-btns { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+    .pbtn {
+      background:#181818; border:1px solid #282828; color:rgba(255,255,255,0.45);
+      padding:8px 4px 10px; text-align:center; cursor:pointer; border-radius:2px;
+      font-family:inherit; transition:all .12s; user-select:none;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+    }
+    .pbtn:hover { background:#202020; border-color:#3a3a3a; color:#fff; }
+    .pbtn.sel { background:#161200; border-color:#c8a020; color:#f0c830; }
+    .pbtn-pos  { font-size:8px; font-weight:800; letter-spacing:1px; color:inherit; }
+    .pbtn-name { font-size:10px; font-weight:700; line-height:1.3; }
+    .pbtn-ovr  { font-size:16px; font-weight:900; line-height:1; color:#f0c830; }
+    .pbtn.sel .pbtn-ovr { color:#fff; }
+    .pbtn-votes { font-size:11px; font-weight:700; color:rgba(255,255,255,0.4); line-height:1; }
+    .pbtn.sel .pbtn-votes { color:#f0c830; }
+    .ai-msg { text-align:center; padding:22px 0; font-size:12px; color:#333; font-style:italic; }
+    .done-msg { text-align:center; padding:28px; font-size:13px; color:#f0c830; font-weight:700; letter-spacing:2px; }
+
+    /* ── Team Value Grid ── */
+    .value-grid-card { background:#0d0d0d; border:1px solid #1a1a1a; border-radius:3px; padding:14px; }
+    .vg-title { font-size:9px; font-weight:700; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
+    .vg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+    .vg-cell {
+      background:#111; border:1px solid #1a1a1a; border-radius:2px;
+      padding:5px 6px; text-align:center;
+    }
+    .vg-cell.my-team { border-color:#7a6800; background:#100e00; }
+    .vg-abbr { font-size:9px; font-weight:800; letter-spacing:1px; color:#777; }
+    .vg-cell.my-team .vg-abbr { color:#f0c830; }
+    .vg-val  { font-size:14px; font-weight:900; color:#fff; line-height:1.1; }
+    .vg-delta { font-size:8px; color:#3d8; font-weight:700; min-height:10px; }
+    .vg-delta.neg { color:#e06060; }
+
+    /* ── Section headers ── */
+    .sec-hdr { font-size:10px; font-weight:700; color:#f0c830; letter-spacing:3px; text-transform:uppercase; margin:14px 0 10px; display:flex; align-items:center; gap:10px; }
+    .sec-hdr::after { content:''; flex:1; height:1px; background:#1e1e1e; }
+
+    /* ── Player Pool ── */
+    .pos-filters { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .pos-btn { font-size:9px; font-weight:700; letter-spacing:1px; padding:3px 9px; border-radius:2px; border:1px solid #2a2a2a; background:#151515; color:#555; cursor:pointer; transition:all .12s; user-select:none; }
+    .pos-btn:hover { color:#aaa; border-color:#444; }
+    .pos-btn.active { border-color:#f0c830; color:#f0c830; background:#111000; }
+    .player-list { display:flex; flex-direction:column; gap:2px; max-height:350px; overflow-y:auto; }
+    .player-row {
+      display:grid; grid-template-columns:22px 1fr 70px 28px; gap:8px; align-items:center;
+      padding:6px 10px; background:#111; border:1px solid #1a1a1a; border-radius:2px;
+      font-size:10px; transition:border-color .12s;
+    }
+    .player-row:hover { border-color:#2a2a2a; }
+    .player-row.drafted { opacity:.25; }
+    .pr-pos { font-size:8px; font-weight:800; letter-spacing:1px; }
+    .pr-name { font-weight:600; color:#ddd; }
+    .pr-proj { font-size:9px; color:#444; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pr-ovr { font-size:13px; font-weight:900; text-align:right; }
+    .pos-qb { color:#7ab8f5; } .pos-rb { color:#7af5a0; }
+    .pos-wr { color:#f5c87a; } .pos-k  { color:#d07af5; }
+    .ovr-s  { color:#f0c830; } /* 16-20 */
+    .ovr-a  { color:#78e888; } /* 12-15 */
+    .ovr-b  { color:#aaa; }    /* 8-11  */
+    .ovr-c  { color:#555; }    /* 1-7   */
+
+    /* ── Draft Board ── */
+    .draft-board { background:#0d0d0d; border:1px solid #1a1a1a; border-radius:3px; }
+    .db-hdr { padding:9px 13px; font-size:10px; font-weight:700; color:#555; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid #1a1a1a; display:flex; justify-content:space-between; }
+    .db-hdr span { color:#333; font-size:9px; }
+    .pick-log { max-height:480px; overflow-y:auto; }
+    .pick-row { padding:6px 13px; border-bottom:1px solid #111; font-size:10px; display:flex; gap:8px; align-items:baseline; }
+    .pick-row.my-pick { background:#0d0b00; }
+    .pick-num  { color:#333; min-width:36px; font-size:9px; }
+    .pick-team { font-weight:800; letter-spacing:1px; font-size:10px; min-width:30px; }
+    .pick-team.mine { color:#f0c830; }
+    .pick-pname { color:#bbb; flex:1; }
+    .pick-ppos  { font-size:8px; font-weight:700; letter-spacing:1px; }
+    .pick-povr  { font-size:11px; font-weight:900; margin-left:4px; }
+
+    /* ── Dev panel ── */
+    .dev-panel { display:none; background:#0d0000; border:1px solid #3a0000; padding:7px 12px; margin-bottom:14px; align-items:center; gap:8px; border-radius:2px; flex-wrap:wrap; }
+    .dev-panel.open { display:flex; }
+    .dev-tag { font-size:9px; color:#c00; font-weight:900; letter-spacing:2px; }
+    .dev-btn { background:#1a0000; border:1px solid #500000; color:#e05050; padding:4px 10px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:.5px; cursor:pointer; font-family:inherit; text-transform:uppercase; }
+    .dev-btn:hover { background:#2e0000; border-color:#800; color:#ff8080; }
+    .dev-sep { width:1px; height:16px; background:#3a0000; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>The Gridiron</h1>
+  <span class="sub">SEASON 1 &middot; DRAFT</span>
+  <div class="nav-links">
+    <a href="gridiron_hub.html">League</a>
+    <a href="gridiron_game.html">My Game</a>
+    <a href="gridiron_draft.html" class="active">Draft</a>
+    <a href="gridiron_probabilities.html">Odds</a>
+    <span class="dev-badge" onclick="devToggle()" title="` key">DEV</span>
+  </div>
+</header>
+
+<div class="dev-panel" id="dev-panel">
+  <span class="dev-tag">DEV</span>
+  <div class="dev-sep"></div>
+  <button class="dev-btn" onclick="devNextPick()">Skip Pick</button>
+  <button class="dev-btn" onclick="devSkipToMyPick()">Skip to BUF</button>
+  <button class="dev-btn" onclick="devFinishDraft()">Finish Draft</button>
+  <div class="dev-sep"></div>
+  <button class="dev-btn" onclick="devResetDraft()">Reset Draft</button>
+</div>
+
+<!-- Top row: On the Clock + Team Value Grid -->
+<div class="top-layout">
+  <div class="clock-card" id="clock-card">
+    <div class="clock-label">On the Clock</div>
+    <div class="clock-team" id="clock-team">&mdash;</div>
+    <div class="clock-round" id="clock-round"></div>
+    <div class="cd-bg"><div class="cd-fill" id="cd-fill" style="width:100%"></div></div>
+    <div class="cd-time" id="cd-time"></div>
+    <div id="pick-area"></div>
+  </div>
+  <div class="value-grid-card">
+    <div class="vg-title">Team OVR &mdash; Running Total <span style="color:#333;font-weight:400;">(picks only)</span></div>
+    <div class="vg-grid" id="vg-grid"></div>
+  </div>
+</div>
+
+<!-- Main layout: Player pool left, Draft board right -->
+<div class="main-layout">
+  <div>
+    <div class="sec-hdr">Available Players</div>
+    <div class="pos-filters">
+      <div class="pos-btn active" onclick="setFilter('ALL')" id="filt-ALL">ALL</div>
+      <div class="pos-btn" onclick="setFilter('QB')"  id="filt-QB">QB</div>
+      <div class="pos-btn" onclick="setFilter('RB')"  id="filt-RB">RB</div>
+      <div class="pos-btn" onclick="setFilter('WR')"  id="filt-WR">WR</div>
+      <div class="pos-btn" onclick="setFilter('K')"   id="filt-K">K</div>
+    </div>
+    <div class="player-list" id="player-list"></div>
+  </div>
+
+  <div>
+    <div class="draft-board">
+      <div class="db-hdr">Draft Board <span id="pick-counter">Pick 1 of 96</span></div>
+      <div class="pick-log" id="pick-log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Teams ─────────────────────────────────────────────────────
+var TEAMS = [
+  { city:'Buffalo',       name:'Almanacs',   abbr:'BUF', conf:'AFG', div:'East'  },
+  { city:'Miami',         name:'Flamingos',  abbr:'MIA', conf:'AFG', div:'East'  },
+  { city:'New England',   name:'Puritans',   abbr:'NWE', conf:'AFG', div:'East'  },
+  { city:'New York',      name:'Pigeons',    abbr:'NYP', conf:'AFG', div:'East'  },
+  { city:'Pittsburgh',    name:'Casseroles', abbr:'PIT', conf:'AFG', div:'North' },
+  { city:'Baltimore',     name:'Tugboats',   abbr:'BAL', conf:'AFG', div:'North' },
+  { city:'Cleveland',     name:'Geology',    abbr:'CLE', conf:'AFG', div:'North' },
+  { city:'Cincinnati',    name:'Spoons',     abbr:'CIN', conf:'AFG', div:'North' },
+  { city:'Tennessee',     name:'Vowels',     abbr:'TEN', conf:'AFG', div:'South' },
+  { city:'Indianapolis',  name:'Speedway',   abbr:'IND', conf:'AFG', div:'South' },
+  { city:'Houston',       name:'Humidity',   abbr:'HOU', conf:'AFG', div:'South' },
+  { city:'Jacksonville',  name:'Mullets',    abbr:'JAX', conf:'AFG', div:'South' },
+  { city:'Kansas City',   name:'Middlemen',  abbr:'KCY', conf:'AFG', div:'West'  },
+  { city:'Las Vegas',     name:'The House',  abbr:'LVG', conf:'AFG', div:'West'  },
+  { city:'Denver',        name:'Prospectors',abbr:'DEN', conf:'AFG', div:'West'  },
+  { city:'Los Angeles',   name:'Smog',       abbr:'LAP', conf:'AFG', div:'West'  },
+  { city:'Philadelphia',  name:'Mummers',    abbr:'PHI', conf:'NFG', div:'East'  },
+  { city:'Dallas',        name:'Tycoons',    abbr:'DAL', conf:'NFG', div:'East'  },
+  { city:'New York',      name:'Gargoyles',  abbr:'NYA', conf:'NFG', div:'East'  },
+  { city:'Washington',    name:'Monuments',  abbr:'WAS', conf:'NFG', div:'East'  },
+  { city:'Chicago',       name:'Gusts',      abbr:'CHI', conf:'NFG', div:'North' },
+  { city:'Green Bay',     name:'Curds',      abbr:'GBP', conf:'NFG', div:'North' },
+  { city:'Minnesota',     name:'Loons',      abbr:'MIN', conf:'NFG', div:'North' },
+  { city:'Detroit',       name:'Potholes',   abbr:'DET', conf:'NFG', div:'North' },
+  { city:'New Orleans',   name:'Gumbo',      abbr:'NOS', conf:'NFG', div:'South' },
+  { city:'Carolina',      name:'Sweet Tea',  abbr:'CAR', conf:'NFG', div:'South' },
+  { city:'Atlanta',       name:'Offramps',   abbr:'ATL', conf:'NFG', div:'South' },
+  { city:'Tampa Bay',     name:'Manatees',   abbr:'TAM', conf:'NFG', div:'South' },
+  { city:'San Francisco', name:'Fog',        abbr:'SFO', conf:'NFG', div:'West'  },
+  { city:'Seattle',       name:'Drizzle',    abbr:'SEA', conf:'NFG', div:'West'  },
+  { city:'Los Angeles',   name:'Billboards', abbr:'LAM', conf:'NFG', div:'West'  },
+  { city:'Arizona',       name:'Mirage',     abbr:'ARI', conf:'NFG', div:'West'  },
+];
+
+var MY_TEAM  = 'BUF';
+var ROUNDS   = 3;
+var CD_SECS  = 60;
+
+// Draft order R1: worst-to-best. BUF at pick 5.
+var DRAFT_ORDER_R1 = [
+  'JAX','DET','NOS','CAR','BUF','ARI','LAM','CIN',
+  'HOU','CLE','MIN','NYA','TEN','WAS','LVG','GBP',
+  'IND','ATL','BAL','DEN','SEA','CHI','NYP','PIT',
+  'TAM','PHI','NWE','SFO','MIA','DAL','KCY','LAP',
+];
+var draftOrder = [];
+for (var r=0; r<ROUNDS; r++) {
+  var ord = r===1 ? DRAFT_ORDER_R1.slice().reverse() : DRAFT_ORDER_R1.slice();
+  ord.forEach(function(a){ draftOrder.push(a); });
+}
+var totalPicks = draftOrder.length;
+
+// ── Player Pool ───────────────────────────────────────────────
+// ovr: 1-20 rating. Projections are per-season estimates.
+// proj fields: QB {cmp,yds,td,int}, RB {car,yds,td}, WR {rec,yds,td}, K {fgm,fga}
+var PLAYER_POOL = [
+  // ── QBs ──
+  {name:'A. Volkov',      pos:'QB', ovr:19, attr:'Strong arm',    proj:{cmp:218,yds:3420,td:28,int:8}},
+  {name:'B. Osei',        pos:'QB', ovr:17, attr:'Mobile',        proj:{cmp:196,yds:2980,td:22,int:9}},
+  {name:'C. Tanaka',      pos:'QB', ovr:16, attr:'High accuracy', proj:{cmp:230,yds:3100,td:20,int:6}},
+  {name:'D. Mercer',      pos:'QB', ovr:15, attr:'Veteran',       proj:{cmp:204,yds:2850,td:18,int:7}},
+  {name:'E. Fontaine',    pos:'QB', ovr:14, attr:'Rifle',         proj:{cmp:185,yds:2760,td:17,int:11}},
+  {name:'F. Nkemdirim',   pos:'QB', ovr:13, attr:'Scrambler',     proj:{cmp:172,yds:2540,td:16,int:10}},
+  {name:'G. Stavros',     pos:'QB', ovr:12, attr:'Deep ball',     proj:{cmp:158,yds:2680,td:15,int:13}},
+  {name:'H. Delacroix',   pos:'QB', ovr:11, attr:'Pocket passer', proj:{cmp:190,yds:2400,td:13,int:8}},
+  {name:'I. Bjornsson',   pos:'QB', ovr:10, attr:'Gunslinger',    proj:{cmp:162,yds:2320,td:14,int:14}},
+  {name:'J. Wickham',     pos:'QB', ovr: 9, attr:'Game manager',  proj:{cmp:176,yds:2100,td:11,int:7}},
+  {name:'K. Petrov',      pos:'QB', ovr: 8, attr:'Improviser',    proj:{cmp:148,yds:1980,td:10,int:12}},
+  {name:'L. Oduya',       pos:'QB', ovr: 6, attr:'Raw talent',    proj:{cmp:134,yds:1760,td: 9,int:14}},
+  // ── RBs ──
+  {name:'A. Dzeko',       pos:'RB', ovr:18, attr:'Power back',       proj:{car:248,yds:1380,td:14}},
+  {name:'B. Kamara',      pos:'RB', ovr:17, attr:'Explosive',        proj:{car:220,yds:1290,td:12}},
+  {name:'C. Sorensen',    pos:'RB', ovr:16, attr:'Shifty',           proj:{car:210,yds:1240,td:11}},
+  {name:'D. Aguilar',     pos:'RB', ovr:15, attr:'Workhorse',        proj:{car:262,yds:1180,td:10}},
+  {name:'E. Mbeki',       pos:'RB', ovr:14, attr:'Speed',            proj:{car:195,yds:1150,td:10}},
+  {name:'F. Okafor',      pos:'RB', ovr:13, attr:'Pass catcher',     proj:{car:168,yds:980, td: 8}},
+  {name:'G. Lindberg',    pos:'RB', ovr:12, attr:'Bruiser',          proj:{car:230,yds:1040,td: 9}},
+  {name:'H. Vasquez',     pos:'RB', ovr:11, attr:'Home run hitter',  proj:{car:175,yds:990, td: 8}},
+  {name:'I. Sato',        pos:'RB', ovr:10, attr:'Elusive',          proj:{car:182,yds:920, td: 7}},
+  {name:'J. Fitzroy',     pos:'RB', ovr: 9, attr:'Veteran',          proj:{car:190,yds:880, td: 7}},
+  {name:'K. Nakajima',    pos:'RB', ovr: 8, attr:'3rd-down back',    proj:{car:130,yds:760, td: 5}},
+  {name:'L. Brandt',      pos:'RB', ovr: 7, attr:'Short yardage',    proj:{car:145,yds:680, td: 6}},
+  {name:'M. Kowalczyk',   pos:'RB', ovr: 6, attr:'Depth',            proj:{car:112,yds:580, td: 4}},
+  {name:'N. Ferreira',    pos:'RB', ovr: 5, attr:'All-purpose',      proj:{car:100,yds:520, td: 3}},
+  {name:'O. Mensah',      pos:'RB', ovr: 4, attr:'Developmental',    proj:{car: 82,yds:420, td: 3}},
+  {name:'P. Eriksen',     pos:'RB', ovr: 3, attr:'Practice squad',   proj:{car: 50,yds:280, td: 2}},
+  // ── WRs ──
+  {name:'A. Reyes',       pos:'WR', ovr:19, attr:'Deep threat',       proj:{rec:84,yds:1420,td:12}},
+  {name:'B. Holst',       pos:'WR', ovr:18, attr:'Route runner',      proj:{rec:96,yds:1280,td:10}},
+  {name:'C. Afolabi',     pos:'WR', ovr:17, attr:'Sure hands',        proj:{rec:102,yds:1190,td: 9}},
+  {name:'D. Petersen',    pos:'WR', ovr:16, attr:'Slot',              proj:{rec:110,yds:1150,td: 8}},
+  {name:'E. Krauss',      pos:'WR', ovr:15, attr:'Vertical',          proj:{rec: 72,yds:1240,td:10}},
+  {name:'F. Mbeki',       pos:'WR', ovr:14, attr:'Red zone target',   proj:{rec: 78,yds:1020,td:11}},
+  {name:'G. Yamamoto',    pos:'WR', ovr:13, attr:'Crisp routes',      proj:{rec: 88,yds: 980,td: 7}},
+  {name:'H. Okonkwo',     pos:'WR', ovr:12, attr:'Physical',          proj:{rec: 80,yds: 960,td: 8}},
+  {name:'I. Vestergaard', pos:'WR', ovr:11, attr:'Sure-handed',       proj:{rec: 86,yds: 890,td: 6}},
+  {name:'J. Cruz',        pos:'WR', ovr:10, attr:'RAC',               proj:{rec: 78,yds: 840,td: 5}},
+  {name:'K. Adeyemi',     pos:'WR', ovr: 9, attr:'Separation',        proj:{rec: 70,yds: 780,td: 5}},
+  {name:'L. Carlsson',    pos:'WR', ovr: 8, attr:'Possession',        proj:{rec: 82,yds: 720,td: 4}},
+  {name:'M. Fernandez',   pos:'WR', ovr: 8, attr:'Versatile',         proj:{rec: 74,yds: 700,td: 4}},
+  {name:'N. Bakke',       pos:'WR', ovr: 7, attr:'Screen specialist', proj:{rec: 68,yds: 650,td: 3}},
+  {name:'O. Ismail',      pos:'WR', ovr: 7, attr:'Speedster',         proj:{rec: 60,yds: 680,td: 4}},
+  {name:'P. Novak',       pos:'WR', ovr: 6, attr:'Contested catch',   proj:{rec: 58,yds: 580,td: 4}},
+  {name:'Q. Chirwa',      pos:'WR', ovr: 5, attr:'Developmental',     proj:{rec: 48,yds: 480,td: 2}},
+  {name:'R. Gutierrez',   pos:'WR', ovr: 5, attr:'West coast',        proj:{rec: 52,yds: 460,td: 2}},
+  {name:'S. Andersen',    pos:'WR', ovr: 4, attr:'Depth',             proj:{rec: 40,yds: 380,td: 1}},
+  {name:'T. Diarra',      pos:'WR', ovr: 4, attr:'Jump ball',         proj:{rec: 36,yds: 360,td: 2}},
+  {name:'U. Kowalski',    pos:'WR', ovr: 3, attr:'Practice squad',    proj:{rec: 28,yds: 260,td: 1}},
+  {name:'V. Johansson',   pos:'WR', ovr: 3, attr:'Depth',             proj:{rec: 24,yds: 220,td: 1}},
+  {name:'W. Nwosu',       pos:'WR', ovr: 2, attr:'Raw',               proj:{rec: 18,yds: 160,td: 0}},
+  {name:'X. Molina',      pos:'WR', ovr: 2, attr:'Developmental',     proj:{rec: 16,yds: 140,td: 0}},
+  // ── Ks ──
+  {name:'A. Bauer',       pos:'K',  ovr:18, attr:'Leg strength',  proj:{fgm:32,fga:35}},
+  {name:'B. Santos',      pos:'K',  ovr:16, attr:'Precision',     proj:{fgm:29,fga:31}},
+  {name:'C. Holm',        pos:'K',  ovr:14, attr:'Clutch',        proj:{fgm:27,fga:30}},
+  {name:'D. Ngozi',       pos:'K',  ovr:12, attr:'Kickoffs',      proj:{fgm:25,fga:29}},
+  {name:'E. Larsen',      pos:'K',  ovr:10, attr:'Long range',    proj:{fgm:22,fga:27}},
+  {name:'F. Cardenas',    pos:'K',  ovr: 8, attr:'Reliable',      proj:{fgm:20,fga:24}},
+  {name:'G. Watts',       pos:'K',  ovr: 6, attr:'Veteran',       proj:{fgm:17,fga:22}},
+  {name:'H. Stein',       pos:'K',  ovr: 4, attr:'Specialist',    proj:{fgm:14,fga:20}},
+];
+
+PLAYER_POOL.forEach(function(p,i){ p.id=i; p.drafted=false; p.draftedBy=null; });
+
+// ── State ─────────────────────────────────────────────────────
+var teamOVR     = {};
+TEAMS.forEach(function(t){ teamOVR[t.abbr] = 0; });
+var teamOVRPrev = {};
+TEAMS.forEach(function(t){ teamOVRPrev[t.abbr] = 0; });
+
+var currentPick    = 0;
+var pickLog        = [];
+var cdTimer        = null;
+var cdRemaining    = CD_SECS;
+var chosen         = null;
+var votes          = {0:0,1:0,2:0,3:0};
+var waitingForVote = false;
+var posFilter      = 'ALL';
+var currentOptions = [];
+
+// ── Helpers ───────────────────────────────────────────────────
+function availablePlayers() {
+  return PLAYER_POOL.filter(function(p){ return !p.drafted; });
+}
+
+function ovrCls(v) {
+  if (v>=16) return 'ovr-s';
+  if (v>=12) return 'ovr-a';
+  if (v>= 8) return 'ovr-b';
+  return 'ovr-c';
+}
+
+function posCls(pos){ return 'pos-'+pos.toLowerCase(); }
+
+function projStr(p) {
+  var g = p.proj;
+  if (p.pos==='QB')  return g.cmp+' cmp / '+g.yds+' yds / '+g.td+'td '+g.int+'int';
+  if (p.pos==='RB')  return g.car+' car / '+g.yds+' yds / '+g.td+'td';
+  if (p.pos==='WR')  return g.rec+' rec / '+g.yds+' yds / '+g.td+'td';
+  if (p.pos==='K')   return g.fgm+'/'+g.fga+' FG';
+  return '';
+}
+
+// ── Team OVR Grid ─────────────────────────────────────────────
+function renderOVRGrid() {
+  var grid = document.getElementById('vg-grid');
+  grid.innerHTML = TEAMS.map(function(t){
+    var val   = teamOVR[t.abbr];
+    var delta = val - teamOVRPrev[t.abbr];
+    var mine  = t.abbr === MY_TEAM;
+    var dc    = delta>0 ? '' : (delta<0?'neg':'');
+    var ds    = delta>0 ? '+'+delta : (delta<0?''+delta:'');
+    return '<div class="vg-cell'+(mine?' my-team':'')+'">'+
+      '<div class="vg-abbr">'+t.abbr+'</div>'+
+      '<div class="vg-val">'+val+'</div>'+
+      '<div class="vg-delta '+dc+'">'+(ds||'&mdash;')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── Player List ───────────────────────────────────────────────
+function renderPlayerList() {
+  var list = document.getElementById('player-list');
+  var all  = PLAYER_POOL.filter(function(p){ return posFilter==='ALL'||p.pos===posFilter; });
+  list.innerHTML = all.map(function(p){
+    return '<div class="player-row'+(p.drafted?' drafted':'')+'">'+
+      '<span class="pr-pos '+posCls(p.pos)+'">'+p.pos+'</span>'+
+      '<div>'+
+        '<div class="pr-name">'+p.name+(p.draftedBy?' <span style="color:#2a2a2a;font-size:9px;">\u2014 '+p.draftedBy+'</span>':'')+'</div>'+
+        '<div class="pr-proj"><em>proj:</em> '+projStr(p)+'</div>'+
+      '</div>'+
+      '<div class="pr-proj" style="text-align:right;">'+p.attr+'</div>'+
+      '<div class="pr-ovr '+ovrCls(p.ovr)+'">'+p.ovr+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── Pick Log ──────────────────────────────────────────────────
+function renderPickLog() {
+  var log  = document.getElementById('pick-log');
+  var mine = MY_TEAM;
+  log.innerHTML = pickLog.map(function(e){
+    var isMine = e.team===mine;
+    return '<div class="pick-row'+(isMine?' my-pick':'')+'">'+
+      '<span class="pick-num">'+e.num+'</span>'+
+      '<span class="pick-team'+(isMine?' mine':'')+'">'+e.team+'</span>'+
+      '<span class="pick-pname">'+e.player+'</span>'+
+      '<span class="pick-ppos '+posCls(e.pos)+'">'+e.pos+'</span>'+
+      '<span class="pick-povr '+ovrCls(e.ovr)+'">'+e.ovr+'</span>'+
+    '</div>';
+  }).reverse().join('');
+  document.getElementById('pick-counter').textContent =
+    'Pick '+(Math.min(currentPick+1, totalPicks))+' of '+totalPicks;
+}
+
+// ── Vote counting ─────────────────────────────────────────────
+function updateVoteCounts() {
+  currentOptions.forEach(function(p,i){
+    var el = document.getElementById('pvot-'+i);
+    if (el) el.textContent = votes[i]||0;
+  });
+}
+
+// ── Countdown ─────────────────────────────────────────────────
+function startCountdown(onDone) {
+  cdRemaining = CD_SECS; chosen=null; votes={0:0,1:0,2:0,3:0};
+  var bar  = document.getElementById('cd-fill');
+  var tEl  = document.getElementById('cd-time');
+  bar.style.transition='none'; bar.style.width='100%';
+  stopCountdown();
+  cdTimer = setInterval(function(){
+    cdRemaining--;
+    bar.style.transition='width 1s linear';
+    bar.style.width=(cdRemaining/CD_SECS*100)+'%';
+    if (tEl) tEl.textContent = cdRemaining+'s remaining';
+    updateVoteCounts();
+    if (cdRemaining<=0){ stopCountdown(); onDone(); }
+  },1000);
+}
+
+function stopCountdown(){
+  if (cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+}
+
+// ── Execute pick ──────────────────────────────────────────────
+function executePick(pickIdx, player) {
+  var abbr = draftOrder[pickIdx];
+  TEAMS.forEach(function(t){ teamOVRPrev[t.abbr] = teamOVR[t.abbr]; });
+  teamOVR[abbr] += player.ovr;
+  player.drafted = true;
+  player.draftedBy = abbr;
+  var roundN = Math.floor(pickIdx/32)+1;
+  var pickN  = (pickIdx%32)+1;
+  pickLog.push({ num:'R'+roundN+' P'+pickN, team:abbr, player:player.name, pos:player.pos, ovr:player.ovr });
+  renderPickLog();
+  renderPlayerList();
+  renderOVRGrid();
+}
+
+// ── AI pick ───────────────────────────────────────────────────
+function runAIPick() {
+  var avail = availablePlayers();
+  if (!avail.length){ endDraft(); return; }
+  // AI biases toward highest available player (with some randomness)
+  avail.sort(function(a,b){ return b.ovr-a.ovr; });
+  var topN  = Math.min(6, avail.length);
+  var p     = avail[Math.floor(Math.random()*topN)];
+  executePick(currentPick, p);
+  currentPick++;
+  setTimeout(advanceDraft, 700+Math.random()*600);
+}
+
+// ── My pick ───────────────────────────────────────────────────
+function runMyPick() {
+  waitingForVote = true;
+  var avail = availablePlayers();
+  if (!avail.length){ endDraft(); return; }
+  // Show 4 best available players as options
+  avail.sort(function(a,b){ return b.ovr-a.ovr; });
+  var topPool = avail.slice(0, Math.min(12, avail.length));
+  // Shuffle top pool slightly so it's not always same order
+  for (var i=topPool.length-1; i>0; i--){
+    var j=Math.floor(Math.random()*(i+1)); var tmp=topPool[i]; topPool[i]=topPool[j]; topPool[j]=tmp;
+  }
+  currentOptions = topPool.slice(0,4);
+  var area = document.getElementById('pick-area');
+  area.innerHTML = '<div class="pick-btns">'+
+    currentOptions.map(function(p,i){
+      return '<div class="pbtn" id="pbtn-'+i+'" onclick="vote('+i+')">'+
+        '<span class="pbtn-pos '+posCls(p.pos)+'">'+p.pos+'</span>'+
+        '<span class="pbtn-name">'+p.name+'</span>'+
+        '<span class="pbtn-ovr">'+p.ovr+'</span>'+
+        '<span class="pbtn-votes" id="pvot-'+i+'">0</span>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+  startCountdown(function(){
+    // Resolve: user's explicit choice wins; else most-voted; else random
+    var winner = chosen;
+    if (winner===null){
+      var best=-1, bestV=-1;
+      currentOptions.forEach(function(p,i){ if((votes[i]||0)>bestV){ bestV=votes[i]||0; best=i; } });
+      winner = best>=0 ? best : Math.floor(Math.random()*currentOptions.length);
+    }
+    executePick(currentPick, currentOptions[winner]);
+    waitingForVote=false; currentOptions=[]; currentPick++;
+    setTimeout(advanceDraft, 1200);
+  });
+}
+
+function vote(idx) {
+  if (!waitingForVote) return;
+  if (chosen!==null) votes[chosen]=Math.max(0,(votes[chosen]||0)-1);
+  chosen=idx; votes[idx]=(votes[idx]||0)+1;
+  for(var i=0;i<4;i++){
+    var el=document.getElementById('pbtn-'+i);
+    if(el) el.classList.remove('sel');
+  }
+  var sel=document.getElementById('pbtn-'+idx);
+  if(sel) sel.classList.add('sel');
+}
+
+// ── Advance draft ─────────────────────────────────────────────
+function advanceDraft() {
+  if (currentPick >= totalPicks){ endDraft(); return; }
+  var abbr   = draftOrder[currentPick];
+  var roundN = Math.floor(currentPick/32)+1;
+  var pickN  = (currentPick%32)+1;
+  var t      = TEAMS.find(function(t){ return t.abbr===abbr; });
+  var isMine = abbr===MY_TEAM;
+  document.getElementById('clock-team').innerHTML =
+    isMine ? '<span class="hl">'+t.city+' '+t.name+'</span>'
+           : t.city+' '+t.name;
+  document.getElementById('clock-round').textContent =
+    'Round '+roundN+' \u00b7 Pick '+pickN+' of '+totalPicks;
+  var area = document.getElementById('pick-area');
+  if (isMine){
+    area.innerHTML = '';
+    runMyPick();
+  } else {
+    stopCountdown();
+    var bar = document.getElementById('cd-fill');
+    bar.style.transition='none'; bar.style.width='0%';
+    document.getElementById('cd-time').textContent='';
+    area.innerHTML = '<div class="ai-msg">'+abbr+' is on the clock\u2026</div>';
+    setTimeout(runAIPick, 900+Math.random()*900);
+  }
+}
+
+function endDraft() {
+  stopCountdown();
+  var cc = document.getElementById('clock-card');
+  cc.innerHTML = '<div class="done-msg">\u{1F3C6} Draft Complete \u{1F3C6}'+
+    '<div style="font-size:11px;font-weight:400;color:#555;letter-spacing:1px;margin-top:8px;">Season 1 roster locked.</div></div>';
+
+  // Save all rosters to localStorage
+  try {
+    var rosters = {};
+    TEAMS.forEach(function(t) { rosters[t.abbr] = []; });
+    pickLog.forEach(function(pick) {
+      var player = PLAYER_POOL.find(function(p) { return p.name === pick.player; });
+      if (rosters[pick.team] && player) {
+        rosters[pick.team].push({ name:player.name, pos:player.pos, ovr:player.ovr, proj:player.proj });
+      }
+    });
+    localStorage.setItem('gridiron_roster', JSON.stringify(rosters));
+  } catch(e) {}
+}
+
+// ── Filter ────────────────────────────────────────────────────
+function setFilter(pos){
+  posFilter=pos;
+  ['ALL','QB','RB','WR','K'].forEach(function(p){
+    document.getElementById('filt-'+p).classList.toggle('active',p===pos);
+  });
+  renderPlayerList();
+}
+
+// ── Dev ───────────────────────────────────────────────────────
+function devToggle(){ document.getElementById('dev-panel').classList.toggle('open'); }
+
+function devNextPick(){
+  if (currentPick>=totalPicks) return;
+  stopCountdown(); waitingForVote=false; chosen=null; currentOptions=[];
+  var avail=availablePlayers();
+  if (!avail.length){ endDraft(); return; }
+  avail.sort(function(a,b){return b.ovr-a.ovr;});
+  executePick(currentPick, avail[Math.floor(Math.random()*Math.min(6,avail.length))]);
+  currentPick++;
+  setTimeout(advanceDraft, 400);
+}
+
+function devSkipToMyPick(){
+  while(currentPick<totalPicks && draftOrder[currentPick]!==MY_TEAM){
+    var avail=availablePlayers(); if(!avail.length) break;
+    avail.sort(function(a,b){return b.ovr-a.ovr;});
+    executePick(currentPick, avail[Math.floor(Math.random()*Math.min(6,avail.length))]);
+    currentPick++;
+  }
+  stopCountdown(); waitingForVote=false; chosen=null; currentOptions=[];
+  if(currentPick<totalPicks) setTimeout(advanceDraft,300); else endDraft();
+}
+
+function devFinishDraft(){
+  stopCountdown(); waitingForVote=false; chosen=null; currentOptions=[];
+  while(currentPick<totalPicks){
+    var avail=availablePlayers(); if(!avail.length) break;
+    avail.sort(function(a,b){return b.ovr-a.ovr;});
+    executePick(currentPick, avail[Math.floor(Math.random()*Math.min(6,avail.length))]);
+    currentPick++;
+  }
+  endDraft();
+}
+
+function devResetDraft(){
+  stopCountdown(); waitingForVote=false; chosen=null; currentOptions=[]; currentPick=0; pickLog=[];
+  PLAYER_POOL.forEach(function(p){ p.drafted=false; p.draftedBy=null; });
+  TEAMS.forEach(function(t){ teamOVR[t.abbr]=0; teamOVRPrev[t.abbr]=0; });
+  renderPickLog(); renderPlayerList(); renderOVRGrid();
+  advanceDraft();
+}
+
+document.addEventListener('keydown',function(e){ if(e.key==='`'||e.key==='~') devToggle(); });
+
+// ── Init ──────────────────────────────────────────────────────
+renderPlayerList();
+renderPickLog();
+renderOVRGrid();
+advanceDraft();
+</script>
+</body>
+</html>

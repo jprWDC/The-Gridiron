@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Gridiron</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: #080808; color: #fff;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+      padding: 20px;
+    }
+    header { display:flex; align-items:baseline; gap:14px; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid #1c1c1c; }
+    header h1 { font-size:18px; letter-spacing:4px; font-weight:900; text-transform:uppercase; }
+    header .sub { font-size:11px; color:#444; letter-spacing:1px; }
+    header .nav-links { margin-left:auto; display:flex; gap:10px; }
+    header .nav-links a { font-size:10px; color:#555; text-decoration:none; letter-spacing:1px; font-weight:700; text-transform:uppercase; transition:color .15s; }
+    header .nav-links a:hover { color:#f0c830; }
+    header .dev-badge { font-size:9px; color:#400; background:#1a0000; border:1px solid #3a0000; padding:2px 7px; border-radius:2px; cursor:pointer; letter-spacing:1px; font-weight:700; user-select:none; }
+    header .dev-badge:hover { color:#f00; border-color:#800000; }
+
+    .game-card { max-width:860px; background:#111; border:1px solid #222; border-radius:3px; overflow:hidden; }
+
+    .scorebug { display:flex; height:64px; border-bottom:1px solid #1a1a1a; }
+    .sb-away {
+      width:210px; flex-shrink:0;
+      background: linear-gradient(to right, #1a3fa0, #0e2570);
+      display:flex; align-items:center; padding:0 10px; gap:8px;
+    }
+    .sb-home {
+      width:210px; flex-shrink:0;
+      background: linear-gradient(to left, #00895e, #005038);
+      display:flex; align-items:center; padding:0 10px; gap:8px;
+    }
+    .sb-poss { font-size:11px; color:#f0c830; width:12px; flex-shrink:0; transition:opacity .2s; }
+    .sb-poss.hidden { opacity:0; }
+    .sb-info { display:flex; flex-direction:column; flex:1; min-width:0; }
+    .sb-abbr { font-size:10px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.5); }
+    .sb-name { font-size:15px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+    .sb-home .sb-info { text-align:right; }
+    .sb-score { font-size:46px; font-weight:900; color:#fff; line-height:1; flex-shrink:0; letter-spacing:-1px; }
+    .sb-center {
+      flex:1; background:#090909;
+      border-left:2px solid rgba(255,255,255,0.04); border-right:2px solid rgba(255,255,255,0.04);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; padding:0 14px;
+    }
+    .sbc-main { font-size:15px; font-weight:800; color:#f0c830; letter-spacing:2px; text-transform:uppercase; }
+    .sbc-sub  { font-size:12px; font-weight:600; color:rgba(255,255,255,0.7); letter-spacing:1px; }
+
+    .field-strip { padding:5px 12px; background:#0d0d0d; border-bottom:1px solid #1a1a1a; }
+    .field { position:relative; height:13px; background:#0f1f0f; border:1px solid #172617; border-radius:1px; overflow:hidden; }
+    .ez { position:absolute; top:0; bottom:0; width:10%; background:#0a150a; }
+    .ez-l { left:0; border-right:1px solid #172617; }
+    .ez-r { right:0; border-left:1px solid #172617; }
+    .fmid { position:absolute; left:50%; top:0; bottom:0; width:1px; background:#172617; }
+    .ball-dot { position:absolute; top:50%; width:10px; height:10px; background:#c8a020; border-radius:50%; transform:translate(-50%,-50%); transition:left .5s ease; box-shadow:0 0 5px rgba(200,160,32,.6); }
+
+    .bottom-row { display:flex; height:145px; overflow:hidden; }
+
+    .vote-col { width:230px; flex-shrink:0; border-right:1px solid #1a1a1a; padding:7px 9px; display:flex; flex-direction:column; gap:5px; }
+    .vote-label { font-size:10px; font-weight:700; color:rgba(255,255,255,0.35); letter-spacing:2px; text-transform:uppercase; }
+    .cd-bg   { height:3px; background:#1c1c1c; border-radius:2px; overflow:hidden; }
+    .cd-fill { height:100%; background:#f0c830; border-radius:2px; transition:width 1s linear; }
+
+    .play-btns { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; flex:1; }
+    .pbtn {
+      background:#181818; border:1px solid #282828; color:rgba(255,255,255,0.45);
+      padding:5px 2px 7px; text-align:center; cursor:pointer; border-radius:2px;
+      font-family:inherit; transition:all .12s; user-select:none;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    }
+    .pbtn:hover { background:#202020; border-color:#3a3a3a; color:#fff; }
+    .pbtn.sel   { background:#161200; border-color:#c8a020; color:#f0c830; }
+    .pbtn.off   { opacity:.15; pointer-events:none; }
+    .plabel { font-size:9px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:inherit; }
+    .pvotes { font-size:13px; font-weight:700; line-height:1; color:rgba(255,255,255,0.55); }
+    .pbtn.sel .pvotes { color:#f0c830; }
+
+    .log-col { flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+    .log-hdr { padding:6px 13px; flex-shrink:0; font-size:10px; font-weight:700; color:rgba(255,255,255,0.25); letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid #1a1a1a; }
+    .log-entries { flex:1; overflow-y:auto; overflow-x:hidden; }
+    .log-entry { padding:5px 13px; border-bottom:1px solid #141414; font-size:11px; font-weight:500; line-height:1.5; color:rgba(255,255,255,0.4); animation:fin .25s; }
+    .log-entry .ts { color:rgba(255,255,255,0.18); font-size:9px; margin-right:5px; }
+    .log-result { color:#fff; font-weight:700; }
+    .log-entry.td  { color:#f0c830; background:#0d0b00; }
+    .log-entry.td .log-result { color:#fff; }
+    .log-entry.fg  { color:#78e888; background:#00100a; }
+    .log-entry.fg .log-result { color:#fff; }
+    .log-entry.tov { color:#e06060; background:#0d0000; }
+    .log-entry.tov .log-result { color:#ffa0a0; }
+    .log-entry.sys { color:rgba(255,255,255,0.28); font-style:italic; }
+    @keyframes fin { from{opacity:0;background:#141420} to{opacity:1} }
+
+    .roster-bar {
+      padding:7px 13px; background:#0a0a0a; border-top:1px solid #1e1e1e;
+      font-size:10px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; text-transform:uppercase;
+      cursor:pointer; user-select:none; display:flex; align-items:center; gap:7px; transition:color .15s;
+    }
+    .roster-bar:hover { color:rgba(255,255,255,0.55); }
+    .r-chev { transition:transform .2s; }
+    .r-chev.open { transform:rotate(180deg); }
+    .roster-panel { display:none; max-width:860px; background:#0d0d0d; border:1px solid #222; border-top:none; padding:12px 14px; }
+    .roster-panel.open { display:block; }
+    .roster-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .r-team-hdr { font-size:11px; font-weight:800; color:#fff; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
+    .r-tbl { width:100%; border-collapse:collapse; font-size:10px; }
+    .r-tbl th { text-align:left; padding:3px 6px; font-size:9px; font-weight:700; letter-spacing:1px; color:rgba(255,255,255,0.3); border-bottom:1px solid #222; }
+    .r-tbl td { padding:4px 6px; border-bottom:1px solid #181818; color:rgba(255,255,255,0.65); }
+    .r-tbl tr:last-child td { border-bottom:none; }
+    .r-tbl td:first-child { color:#fff; font-weight:600; }
+    .pos-qb { color:#7ab8f5 !important; font-weight:700 !important; }
+    .pos-rb { color:#7af5a0 !important; font-weight:700 !important; }
+    .pos-wr { color:#f5c87a !important; font-weight:700 !important; }
+    .pos-k  { color:#d07af5 !important; font-weight:700 !important; }
+    .zero   { color:rgba(255,255,255,0.2) !important; }
+
+    /* Dev panel */
+    .dev-panel { display:none; max-width:860px; margin-top:6px; background:#0d0000; border:1px solid #3a0000; padding:7px 12px; align-items:center; gap:8px; }
+    .dev-panel.open { display:flex; }
+    .dev-tag { font-size:9px; color:#c00; font-weight:900; letter-spacing:2px; flex-shrink:0; }
+    .dev-btn {
+      background:#1a0000; border:1px solid #500000; color:#e05050; padding:4px 10px; border-radius:2px;
+      font-size:10px; font-weight:700; letter-spacing:.5px; cursor:pointer; font-family:inherit;
+      text-transform:uppercase; transition:all .12s;
+    }
+    .dev-btn:hover { background:#2e0000; border-color:#800; color:#ff8080; }
+    .dev-btn.active { background:#300; border-color:#c00; color:#f00; }
+    .dev-sep { width:1px; height:16px; background:#3a0000; flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>The Gridiron</h1>
+  <span class="sub">SEASON 1 &middot; WEEK 1</span>
+  <div class="nav-links">
+    <a href="gridiron_season.html">Season</a>
+    <a href="gridiron_stats.html">Stats</a>
+    <a href="gridiron_draft.html">Draft</a>
+    <a href="gridiron_probabilities.html">Odds</a>
+  </div>
+  <span class="dev-badge" onclick="devTogglePanel()" title="Dev Panel (` key)">DEV</span>
+</header>
+
+<div class="game-card">
+
+  <div class="scorebug">
+    <div class="sb-away">
+      <span class="sb-poss" id="away-poss">&#9658;</span>
+      <div class="sb-info">
+        <span class="sb-abbr">BUF</span>
+        <span class="sb-name">Almanacs</span>
+      </div>
+      <span class="sb-score" id="away-score">0</span>
+    </div>
+    <div class="sb-center">
+      <div class="sbc-main" id="sbc-main">Q1 &middot; 15:00</div>
+      <div class="sbc-sub"  id="sbc-sub">1st &amp; 10 &middot; BUF 25</div>
+    </div>
+    <div class="sb-home">
+      <span class="sb-score" id="home-score">0</span>
+      <div class="sb-info">
+        <span class="sb-abbr">MIA</span>
+        <span class="sb-name">Flamingos</span>
+      </div>
+      <span class="sb-poss hidden" id="home-poss">&#9658;</span>
+    </div>
+  </div>
+
+  <div class="field-strip">
+    <div class="field">
+      <div class="ez ez-l"></div><div class="ez ez-r"></div>
+      <div class="fmid"></div>
+      <div class="ball-dot" id="ball-dot"></div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <div class="vote-col">
+      <div class="vote-label" id="vote-label">CALL A PLAY</div>
+      <div class="cd-bg"><div class="cd-fill" id="cd-fill" style="width:100%"></div></div>
+      <div class="play-btns" id="play-btns">
+        <div class="pbtn" id="btn-A" onclick="sel('A')">
+          <span class="plabel" id="sub-A">Run</span>
+          <span class="pvotes" id="vot-A">0</span>
+        </div>
+        <div class="pbtn" id="btn-B" onclick="sel('B')">
+          <span class="plabel" id="sub-B">Pass</span>
+          <span class="pvotes" id="vot-B">0</span>
+        </div>
+        <div class="pbtn" id="btn-C" onclick="sel('C')">
+          <span class="plabel" id="sub-C">Screen</span>
+          <span class="pvotes" id="vot-C">0</span>
+        </div>
+        <div class="pbtn" id="btn-D" onclick="sel('D')">
+          <span class="plabel" id="sub-D">Option</span>
+          <span class="pvotes" id="vot-D">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="log-col">
+      <div class="log-hdr">Game Log</div>
+      <div class="log-entries" id="log"></div>
+    </div>
+  </div>
+
+  <div class="roster-bar" onclick="toggleRoster()">
+    <span class="r-chev" id="r-chev">&#9662;</span> ROSTER &amp; STATS
+  </div>
+</div>
+
+<div class="roster-panel" id="roster-panel">
+  <div class="roster-cols" id="roster-cols"></div>
+</div>
+
+<div class="dev-panel" id="dev-panel">
+  <span class="dev-tag">DEV</span>
+  <div class="dev-sep"></div>
+  <button class="dev-btn" onclick="devSkipQuarter()">Skip Quarter</button>
+  <button class="dev-btn" onclick="devEndGame()">End Game</button>
+  <button class="dev-btn" onclick="devNextPlay()">Next Play</button>
+  <div class="dev-sep"></div>
+  <button class="dev-btn" id="dev-fast-btn" onclick="devToggleFast()">Fast Mode: OFF</button>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const USER_TEAM       = 'away';
+const CD_TOTAL        = 10;
+const HARD_STOP       = 23 * 60 * 1000;
+const OPENING_RECEIVE = 'away';
+const GAME_START      = Date.now();
+
+const TEAMS = {
+  away: { city:'Buffalo', name:'Almanacs',  abbr:'BUF' },
+  home: { city:'Miami',   name:'Flamingos', abbr:'MIA' },
+};
+
+// Full 32-team lookup for dynamic opponent loading
+const TEAMS_LOOKUP = {
+  BUF:{city:'Buffalo',name:'Almanacs'},MIA:{city:'Miami',name:'Flamingos'},
+  NWE:{city:'New England',name:'Puritans'},NYP:{city:'New York',name:'Pigeons'},
+  PIT:{city:'Pittsburgh',name:'Casseroles'},BAL:{city:'Baltimore',name:'Tugboats'},
+  CLE:{city:'Cleveland',name:'Geology'},CIN:{city:'Cincinnati',name:'Spoons'},
+  TEN:{city:'Tennessee',name:'Vowels'},IND:{city:'Indianapolis',name:'Speedway'},
+  HOU:{city:'Houston',name:'Humidity'},JAX:{city:'Jacksonville',name:'Mullets'},
+  KCY:{city:'Kansas City',name:'Middlemen'},LVG:{city:'Las Vegas',name:'The House'},
+  DEN:{city:'Denver',name:'Prospectors'},LAP:{city:'Los Angeles',name:'Smog'},
+  PHI:{city:'Philadelphia',name:'Mummers'},DAL:{city:'Dallas',name:'Tycoons'},
+  NYA:{city:'New York',name:'Gargoyles'},WAS:{city:'Washington',name:'Monuments'},
+  CHI:{city:'Chicago',name:'Gusts'},GBP:{city:'Green Bay',name:'Curds'},
+  MIN:{city:'Minnesota',name:'Loons'},DET:{city:'Detroit',name:'Potholes'},
+  NOS:{city:'New Orleans',name:'Gumbo'},CAR:{city:'Carolina',name:'Sweet Tea'},
+  ATL:{city:'Atlanta',name:'Offramps'},TAM:{city:'Tampa Bay',name:'Manatees'},
+  SFO:{city:'San Francisco',name:'Fog'},SEA:{city:'Seattle',name:'Drizzle'},
+  LAM:{city:'Los Angeles',name:'Billboards'},ARI:{city:'Arizona',name:'Mirage'},
+};
+
+const ROSTERS = {
+  away: [
+    { name:'T. Kowalski',  pos:'QB' },
+    { name:'C. Beaumont',  pos:'QB' },
+    { name:'S. Mwangi',    pos:'RB' },
+    { name:'D. Birch',     pos:'RB' },
+    { name:'J. Nakamura',  pos:'WR' },
+    { name:'B. Petrova',   pos:'WR' },
+    { name:'T. Grunewald', pos:'WR' },
+    { name:'F. Marchetti', pos:'K'  },
+  ],
+  home: [
+    { name:'R. Ferreira',  pos:'QB' },
+    { name:'M. Lindqvist', pos:'QB' },
+    { name:'P. Johansson', pos:'RB' },
+    { name:'L. Reyes',     pos:'RB' },
+    { name:'A. Diallo',    pos:'WR' },
+    { name:'C. Okonkwo',   pos:'WR' },
+    { name:'K. Antonescu', pos:'WR' },
+    { name:'O. Skjelbred', pos:'K'  },
+  ],
+};
+
+function initGameStats() {
+  ['away','home'].forEach(function(side) {
+    ROSTERS[side].forEach(function(p) {
+      if      (p.pos==='QB') p.g = {comp:0,att:0,yds:0,td:0,int:0,sack:0};
+      else if (p.pos==='RB') p.g = {car:0,yds:0,td:0};
+      else if (p.pos==='WR') p.g = {tgt:0,rec:0,yds:0,td:0};
+      else if (p.pos==='K')  p.g = {fgm:0,fga:0};
+    });
+  });
+}
+
+function pickPlayer(pos) {
+  var pool = ROSTERS[G.poss].filter(function(p){ return p.pos === pos; });
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function statLine(p) {
+  var g = p.g;
+  if (!g) return '-';
+  if (p.pos==='QB') {
+    if (g.comp===0 && g.att===0) return '-';
+    var s = g.comp+'/'+g.att+', '+g.yds+' yds';
+    if (g.td)   s += ', '+g.td+' TD';
+    if (g.int)  s += ', '+g.int+' INT';
+    if (g.sack) s += ', '+g.sack+' sk';
+    return s;
+  }
+  if (p.pos==='RB') {
+    if (g.car===0) return '-';
+    var s = g.car+' car, '+g.yds+' yds';
+    if (g.td) s += ', '+g.td+' TD';
+    return s;
+  }
+  if (p.pos==='WR') {
+    if (g.tgt===0) return '-';
+    var s = g.rec+'/'+g.tgt+', '+g.yds+' yds';
+    if (g.td) s += ', '+g.td+' TD';
+    return s;
+  }
+  if (p.pos==='K') {
+    if (g.fga===0) return '-';
+    return g.fgm+'/'+g.fga+' FG';
+  }
+  return '-';
+}
+
+function buildRosterPanel() {
+  var cols = document.getElementById('roster-cols');
+  cols.innerHTML = '';
+  ['away','home'].forEach(function(side) {
+    var t = TEAMS[side];
+    var players = ROSTERS[side];
+    var div = document.createElement('div');
+    var rows = players.map(function(p) {
+      var sl = statLine(p);
+      var isEmpty = sl === '-';
+      var posCls = 'pos-' + p.pos.toLowerCase();
+      return '<tr><td>'+p.name+'</td><td class="'+posCls+'">'+p.pos+'</td><td class="'+(isEmpty?'zero':'')+'">'+sl+'</td></tr>';
+    }).join('');
+    div.innerHTML = '<div class="r-team-hdr">'+t.abbr+' &middot; '+t.name+'</div>'
+      +'<table class="r-tbl"><thead><tr><th>Name</th><th>Pos</th><th>This Game</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table>';
+    cols.appendChild(div);
+  });
+}
+
+function toggleRoster() {
+  var panel = document.getElementById('roster-panel');
+  var chev  = document.getElementById('r-chev');
+  buildRosterPanel();
+  panel.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+// ── Game State ────────────────────────────────────────────────
+var G = {
+  quarter:1, secs:900,
+  awayScore:0, homeScore:0,
+  poss:'away', yardLine:25,
+  down:1, ytg:10,
+  over:false, cd:CD_TOTAL, chosen:null,
+  votes:{A:0, B:0, C:0, D:0},
+};
+var cdTimer  = null;
+var DEV_FAST = false;
+
+function ord(n) { return ['','1st','2nd','3rd','4th'][n] || n+'th'; }
+function fmt(s) { return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60); }
+function pT()   { return TEAMS[G.poss]; }
+function dT()   { return TEAMS[opp()]; }
+function opp()  { return G.poss==='away' ? 'home' : 'away'; }
+function onOff(){ return G.poss === USER_TEAM; }
+function inFGRange() { return G.yardLine > 57; }
+
+function fieldLabel() {
+  if (G.yardLine===50) return 'MID 50';
+  if (G.yardLine>50)   return dT().abbr+' '+(100-G.yardLine);
+  return pT().abbr+' '+G.yardLine;
+}
+function visualPct() {
+  var y = G.poss==='away' ? G.yardLine : 100-G.yardLine;
+  return 10 + (y/100)*80;
+}
+
+// ── UI Refresh ────────────────────────────────────────────────
+function ui() {
+  document.getElementById('away-score').textContent = G.awayScore;
+  document.getElementById('home-score').textContent = G.homeScore;
+  document.getElementById('away-poss').className = 'sb-poss'+(G.poss==='away'&&!G.over?'':' hidden');
+  document.getElementById('home-poss').className = 'sb-poss'+(G.poss==='home'&&!G.over?'':' hidden');
+
+  if (G.over) {
+    document.getElementById('sbc-main').textContent = 'FINAL';
+    document.getElementById('sbc-sub').textContent  = TEAMS.away.abbr+' '+G.awayScore+'  \u2014  '+TEAMS.home.abbr+' '+G.homeScore;
+    document.getElementById('vote-label').textContent = '';
+    document.getElementById('cd-fill').style.width = '0';
+    ['A','B','C','D'].forEach(function(p){ document.getElementById('btn-'+p).classList.add('off'); });
+    stopCD();
+  } else {
+    document.getElementById('sbc-main').textContent = 'Q'+G.quarter+' \u00b7 '+fmt(G.secs);
+    document.getElementById('sbc-sub').textContent  = ord(G.down)+' & '+G.ytg+' \u00b7 '+fieldLabel();
+    document.getElementById('ball-dot').style.left  = visualPct()+'%';
+
+    var btns = document.getElementById('play-btns');
+    var btnD = document.getElementById('btn-D');
+
+    if (onOff()) {
+      document.getElementById('vote-label').textContent = 'CALL A PLAY';
+      btns.style.gridTemplateColumns = 'repeat(4,1fr)';
+      btnD.style.display = '';
+
+      if (G.down === 4) {
+        document.getElementById('sub-A').textContent = 'Punt';
+        document.getElementById('sub-B').textContent = 'Field Goal';
+        document.getElementById('sub-C').textContent = 'Fake Punt';
+        document.getElementById('sub-D').textContent = 'Go For It';
+        document.getElementById('btn-A').classList.remove('off');
+        document.getElementById('btn-B').classList.toggle('off', !inFGRange());
+        document.getElementById('btn-C').classList.remove('off');
+        document.getElementById('btn-D').classList.remove('off');
+      } else {
+        document.getElementById('sub-A').textContent = 'Run';
+        document.getElementById('sub-B').textContent = 'Pass';
+        document.getElementById('sub-C').textContent = 'Screen';
+        document.getElementById('sub-D').textContent = 'Option';
+        ['A','B','C','D'].forEach(function(p){ document.getElementById('btn-'+p).classList.remove('off'); });
+      }
+    } else {
+      document.getElementById('vote-label').textContent = 'CALL DEFENSE';
+      btns.style.gridTemplateColumns = 'repeat(3,1fr)';
+      btnD.style.display = 'none';
+      document.getElementById('sub-A').textContent = 'Man';
+      document.getElementById('sub-B').textContent = 'Zone';
+      document.getElementById('sub-C').textContent = 'Blitz';
+      ['A','B','C'].forEach(function(p){ document.getElementById('btn-'+p).classList.remove('off'); });
+    }
+  }
+
+  if (document.getElementById('roster-panel').classList.contains('open')) {
+    buildRosterPanel();
+  }
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function log(text, cls, result) {
+  cls    = cls    || '';
+  result = result || '';
+  var d = document.createElement('div');
+  d.className = 'log-entry'+(cls?' '+cls:'');
+  var html = '<span class="ts">'+fmt(G.secs)+'</span>'+text;
+  if (result) html += ' <span class="log-result">'+result+'</span>';
+  d.innerHTML = html;
+  document.getElementById('log').insertBefore(d, document.getElementById('log').firstChild);
+}
+
+// ── Vote UI ───────────────────────────────────────────────────
+function updateVoteCounts() {
+  ['A','B','C','D'].forEach(function(p) {
+    var el = document.getElementById('vot-'+p);
+    if (el) el.textContent = G.votes[p] || 0;
+  });
+}
+
+function startCD() {
+  if (G.over) return;
+  var cdLen = DEV_FAST ? 1 : CD_TOTAL;
+  G.cd = cdLen; G.chosen = null;
+  G.votes = {A:0, B:0, C:0, D:0};
+  clearBtns();
+  updateVoteCounts();
+
+  var bar = document.getElementById('cd-fill');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  stopCD();
+
+  cdTimer = setInterval(function() {
+    G.cd--;
+    bar.style.transition = 'width 1s linear';
+    bar.style.width = (G.cd/cdLen*100)+'%';
+    if (G.cd <= 0) { stopCD(); firePlay(); }
+  }, 1000);
+}
+
+function stopCD() {
+  if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+}
+
+function sel(p) {
+  if (G.over) return;
+  if (G.chosen && G.votes[G.chosen] > 0) G.votes[G.chosen]--;
+  G.chosen = p;
+  G.votes[p]++;
+  clearBtns();
+  document.getElementById('btn-'+p).classList.add('sel');
+  updateVoteCounts();
+}
+
+function clearBtns() {
+  ['A','B','C','D'].forEach(function(p){ document.getElementById('btn-'+p).classList.remove('sel'); });
+}
+
+// ── Play Resolution ───────────────────────────────────────────
+function firePlay() {
+  if (G.over) return;
+  if (Date.now()-GAME_START >= HARD_STOP) {
+    G.over = true; stopCD();
+    var w = G.awayScore>G.homeScore ? TEAMS.away : G.homeScore>G.awayScore ? TEAMS.home : null;
+    log('\u23f1 Time limit. '+TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore+'.', 'td',
+        w ? w.city+' '+w.name+' win.' : 'Tied.');
+    saveResult(); ui(); return;
+  }
+
+  var burnLo = DEV_FAST ?  4 : 28;
+  var burnHi = DEV_FAST ? 10 : 18;
+  G.secs = Math.max(0, G.secs-(burnLo+Math.floor(Math.random()*burnHi)));
+
+  var offense = onOff();
+  var choices = offense ? ['A','B','C','D'] : ['A','B','C'];
+
+  var chosen = G.chosen;
+  if (!chosen) {
+    var maxV = 0;
+    choices.forEach(function(c){ if ((G.votes[c]||0) > maxV) maxV = G.votes[c]||0; });
+    var top = choices.filter(function(c){ return (G.votes[c]||0) === maxV; });
+    chosen = top[Math.floor(Math.random()*top.length)];
+  }
+
+  var def = offense ? null : chosen;
+
+  if (offense) {
+    if (G.down === 4) {
+      if      (chosen==='A') doSpecialPunt();
+      else if (chosen==='B') doSpecialFG();
+      else if (chosen==='C') doFakePunt();
+      else                   doGoForIt(null);
+    } else {
+      if      (chosen==='A') doRun(false, null);
+      else if (chosen==='B') doPass(false, null);
+      else if (chosen==='C') doScreen(null);
+      else                   Math.random()<0.5 ? doRun(true,null) : doPass(true,null);
+    }
+  } else {
+    if (G.down === 4) {
+      if      (inFGRange()) doSpecialFG();
+      else if (G.ytg <= 2)  doGoForIt(def);
+      else                  doSpecialPunt();
+    } else {
+      var r = Math.random();
+      if      (r < 0.35) doRun(false, def);
+      else if (r < 0.62) doPass(false, def);
+      else if (r < 0.80) doScreen(def);
+      else               Math.random()<0.5 ? doRun(true,def) : doPass(true,def);
+    }
+  }
+
+  ui();
+  if (G.over) return;
+  var delay = DEV_FAST ? 500 : 2000+Math.random()*500;
+  if (G.secs<=0) setTimeout(function(){ endQuarter(); ui(); if(!G.over) startCD(); }, delay);
+  else           setTimeout(startCD, delay);
+}
+
+// ── applyGain ─────────────────────────────────────────────────
+function applyGain(gain, desc, onTD) {
+  var newYL = G.yardLine + gain;
+  if (newYL <= 0)   { safety(desc); return; }
+  if (newYL >= 100) { G.yardLine=100; if(onTD) onTD(); touchdown(desc); return; }
+  G.yardLine = newYL;
+  G.ytg -= gain;
+  if (gain > 0 && G.ytg <= 0) {
+    G.down=1; G.ytg=10;
+    log(desc, '', 'First down, '+pT().abbr+'!');
+  } else {
+    G.down++;
+    if (G.down > 4) {
+      log(desc, 'tov', 'Turnover on downs \u2014 '+dT().abbr+' takes over.');
+      flipPoss();
+    } else {
+      log(desc, '', ord(G.down)+' & '+G.ytg+'.');
+    }
+  }
+}
+
+// ── RUN ───────────────────────────────────────────────────────
+function doRun(option, def) {
+  var rb  = pickPlayer('RB');
+  rb.g.car++;
+  var tag = option ? '(Option) ' : '';
+  var fumbleChance = def==='C' ? 0.12 : 0.05;
+  if (Math.random() < fumbleChance) {
+    log(tag+rb.name+' fumbles!', 'tov', dT().abbr+' recovers.');
+    flipPoss(); return;
+  }
+  var gain;
+  if      (def==='A') gain = Math.max(1, Math.floor(Math.random()*12)+1);
+  else if (def==='C') gain = Math.max(5, Math.floor(Math.random()*18)+5);
+  else                gain = Math.max(3, Math.floor(Math.random()*14)+3);
+  rb.g.yds += gain;
+  var desc;
+  if      (gain>=18) desc = tag+rb.name+' breaks LOOSE for '+gain+' yards!';
+  else if (gain>=12) desc = tag+rb.name+' breaks free for '+gain+' yards.';
+  else if (gain>=7)  desc = tag+rb.name+' grinds out '+gain+' yards.';
+  else               desc = tag+rb.name+' carries for '+gain+' yard'+(gain!==1?'s':'')+'.';
+  applyGain(gain, desc, function(){ rb.g.td++; });
+}
+
+// ── PASS ──────────────────────────────────────────────────────
+function doPass(option, def) {
+  var qb  = pickPlayer('QB');
+  var wr  = pickPlayer('WR');
+  var tag = option ? '(Option) ' : '';
+  var sackChance = def==='A' ? 0.08 : def==='C' ? 0.03 : 0.05;
+  if (Math.random() < sackChance) {
+    qb.g.att++; qb.g.sack++;
+    var loss = 5+Math.floor(Math.random()*6);
+    applyGain(-loss, tag+qb.name+' is sacked, loses '+loss+' yards.', null);
+    return;
+  }
+  qb.g.att++;
+  var intChance = def==='A' ? 0.07 : def==='C' ? 0.14 : 0.05;
+  if (Math.random() < intChance) {
+    qb.g.int++;
+    if (Math.random() < 0.20) {
+      var defAbbr = dT().abbr;
+      var ps6pat = Math.random() > 0.06;
+      var ps6pts = ps6pat ? 7 : 6;
+      if (G.poss==='away') G.homeScore+=ps6pts; else G.awayScore+=ps6pts;
+      var ps6str = ps6pat ? '' : ' (PAT no good)';
+      log(tag+qb.name+' PICKED OFF \u2014 '+defAbbr+' takes it to the house!'+ps6str,
+          'td', 'PICK-SIX! '+TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore);
+      G.yardLine=25; G.down=1; G.ytg=10;
+      G.secs=Math.max(0,G.secs-18);
+      log('Kickoff. '+pT().city+' '+pT().name+' receive at their own 25.');
+    } else {
+      var retYL = 18+Math.floor(Math.random()*25);
+      log(tag+qb.name+' picked off!', 'tov', dT().abbr+' intercepts.');
+      flipPoss(); G.yardLine = retYL;
+    }
+    return;
+  }
+  var compRate = def==='A' ? 0.62 : def==='C' ? 0.70 : 0.68;
+  var maxG     = def==='C' ? 38 : 28;
+  if (Math.random() > compRate) {
+    wr.g.tgt++;
+    G.down++;
+    if (G.down > 4) {
+      log(tag+qb.name+' incomplete to '+wr.name+'.', 'tov', 'Turnover on downs \u2014 '+dT().abbr+' takes over.');
+      flipPoss();
+    } else {
+      log(tag+qb.name+' incomplete, targeting '+wr.name+'.', '', ord(G.down)+' & '+G.ytg+'.');
+    }
+    return;
+  }
+  var gain = Math.min(maxG, 6+Math.floor(Math.random()*(maxG-5)));
+  qb.g.comp++; qb.g.yds+=gain;
+  wr.g.tgt++;  wr.g.rec++;  wr.g.yds+=gain;
+  var desc;
+  if      (gain>=30) desc = tag+qb.name+' BOMBS it deep to '+wr.name+' \u2014 '+gain+' yards!';
+  else if (gain>=22) desc = tag+qb.name+' connects deep with '+wr.name+' for '+gain+' yards.';
+  else if (gain>=14) desc = tag+qb.name+' threads it to '+wr.name+' for '+gain+' yards.';
+  else               desc = tag+qb.name+' hits '+wr.name+' short, '+gain+' yards.';
+  applyGain(gain, desc, function(){ qb.g.td++; wr.g.td++; });
+}
+
+// ── SCREEN ────────────────────────────────────────────────────
+// Short pass set up behind the line — low INT/sack risk; strong vs Blitz
+function doScreen(def) {
+  var qb = pickPlayer('QB');
+  var wr = pickPlayer('WR');
+  qb.g.att++;
+  if (Math.random() < 0.01) {
+    qb.g.sack++;
+    var loss = 2+Math.floor(Math.random()*4);
+    applyGain(-loss, qb.name+' caught from behind on the screen \u2014 loses '+loss+' yards.', null);
+    return;
+  }
+  if (Math.random() < 0.02) {
+    qb.g.int++;
+    log('Screen tipped and intercepted!', 'tov', dT().abbr+' intercepts.');
+    flipPoss(); G.yardLine = 20+Math.floor(Math.random()*20);
+    return;
+  }
+  var compRate = def==='C' ? 0.90 : 0.82;
+  var maxG     = def==='C' ? 18 : 14;
+  if (Math.random() > compRate) {
+    wr.g.tgt++;
+    G.down++;
+    if (G.down > 4) {
+      log(qb.name+' screen to '+wr.name+' falls incomplete.', 'tov', 'Turnover on downs \u2014 '+dT().abbr+' takes over.');
+      flipPoss();
+    } else {
+      log(qb.name+' screen incomplete.', '', ord(G.down)+' & '+G.ytg+'.');
+    }
+    return;
+  }
+  var gain = 3+Math.floor(Math.random()*(maxG-2));
+  qb.g.comp++; qb.g.yds+=gain;
+  wr.g.tgt++;  wr.g.rec++;  wr.g.yds+=gain;
+  var wrLast = wr.name.split('.').pop().trim();
+  var desc = gain>=12
+    ? qb.name+' screens to '+wr.name+' \u2014 '+wrLast+' breaks free for '+gain+'!'
+    : qb.name+' screens to '+wr.name+', '+gain+' yards.';
+  applyGain(gain, desc, function(){ qb.g.td++; wr.g.td++; });
+}
+
+// ── SPECIAL TEAMS ─────────────────────────────────────────────
+function doSpecialPunt() {
+  var pYds   = 38+Math.floor(Math.random()*20);
+  var landYL = Math.min(G.yardLine+pYds, 96);
+  var recvYL = 100-landYL;
+  log(pT().abbr+' punts '+pYds+' yds.', '', dT().abbr+' takes over at their own '+recvYL+'.');
+  G.poss=opp(); G.yardLine=recvYL; G.down=1; G.ytg=10;
+}
+
+function doSpecialFG() {
+  var k    = pickPlayer('K');
+  var dist = (100-G.yardLine)+17;
+  var made = Math.random() < Math.max(0, 1-(dist-20)*0.018);
+  k.g.fga++;
+  if (made) {
+    k.g.fgm++;
+    if (G.poss==='away') G.awayScore+=3; else G.homeScore+=3;
+    log('\u2705 '+k.name+' connects from '+dist+' yds.', 'fg',
+        TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore);
+    G.poss=opp(); G.yardLine=25; G.down=1; G.ytg=10;
+    G.secs=Math.max(0,G.secs-12);
+    log('Kickoff. '+pT().city+' '+pT().name+' receive at their own 25.');
+  } else {
+    log('\u274c '+k.name+' misses from '+dist+' yds.', 'tov', dT().abbr+' takes over at the '+fieldLabel()+'.');
+    flipPoss();
+  }
+}
+
+function doFakePunt() {
+  var rb = pickPlayer('RB');
+  rb.g.car++;
+  var defAbbrPre = dT().abbr;
+  if (Math.random() < 0.10) {
+    log('FAKE PUNT! '+rb.name+' fumbles the handoff!', 'tov', defAbbrPre+' recovers.');
+    flipPoss(); return;
+  }
+  if (Math.random() < 0.55) {
+    var bonus = Math.floor(Math.random()*9);
+    var gain  = G.ytg + bonus;
+    rb.g.yds += gain;
+    applyGain(gain, 'FAKE PUNT! '+rb.name+' takes it for '+gain+' yards!', function(){ rb.g.td++; });
+  } else {
+    var shortfall = Math.max(1, G.ytg-Math.floor(Math.random()*3));
+    rb.g.yds += Math.max(0, G.ytg-shortfall);
+    log('FAKE PUNT! '+rb.name+' is stuffed \u2014 short by '+shortfall+' yard'+(shortfall!==1?'s':'')+'.',
+        'tov', defAbbrPre+' takes over.');
+    flipPoss();
+  }
+}
+
+function doGoForIt(def) {
+  Math.random() < 0.5 ? doRun(false, def) : doPass(false, def);
+}
+
+// ── SCORING ───────────────────────────────────────────────────
+function touchdown(playDesc) {
+  var patMade = Math.random() > 0.06;
+  var pts = patMade ? 7 : 6;
+  if (G.poss==='away') G.awayScore+=pts; else G.homeScore+=pts;
+  var patStr = patMade ? '' : ' \u2014 PAT NO GOOD';
+  log('\ud83c\udfc8 '+playDesc+' TOUCHDOWN'+patStr+' \u2014 '+pT().city+' '+pT().name+'!',
+      'td', TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore);
+  G.poss=opp(); G.yardLine=25; G.down=1; G.ytg=10;
+  G.secs=Math.max(0,G.secs-18);
+  log('Kickoff. '+pT().city+' '+pT().name+' receive at their own 25.');
+}
+
+function safety(desc) {
+  var defAbbr = dT().abbr;
+  var offCity = pT().city;
+  if (G.poss==='away') G.homeScore+=2; else G.awayScore+=2;
+  log('\u26a0\ufe0f '+desc+' \u2014 SAFETY!', 'tov',
+      defAbbr+' scores 2. '+TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore);
+  G.poss=opp(); G.yardLine=35+Math.floor(Math.random()*15); G.down=1; G.ytg=10;
+  log(offCity+' free kicks. '+pT().abbr+' takes over.', 'sys');
+}
+
+function flipPoss() {
+  G.poss=opp(); G.yardLine=100-G.yardLine; G.down=1; G.ytg=10;
+}
+
+// ── QUARTER / GAME END ────────────────────────────────────────
+function saveResult() {
+  try {
+    var result = {
+      ts: new Date().toISOString(),
+      away: TEAMS.away.abbr, awayScore: G.awayScore,
+      home: TEAMS.home.abbr, homeScore: G.homeScore,
+      winner: G.awayScore>G.homeScore ? 'away' : G.homeScore>G.awayScore ? 'home' : 'tie'
+    };
+    var history = JSON.parse(localStorage.getItem('gridiron_results') || '[]');
+    history.push(result);
+    localStorage.setItem('gridiron_results', JSON.stringify(history));
+
+    // Save player stats (accumulate into gridiron_player_stats)
+    var pStats = {};
+    try { pStats = JSON.parse(localStorage.getItem('gridiron_player_stats') || '{}'); } catch(e2) {}
+    ['away','home'].forEach(function(side) {
+      var abbr = TEAMS[side].abbr;
+      if (!pStats[abbr]) pStats[abbr] = {};
+      ROSTERS[side].forEach(function(p) {
+        if (!p.g) return;
+        var key = p.name;
+        if (!pStats[abbr][key]) pStats[abbr][key] = { name:p.name, pos:p.pos };
+        var s = pStats[abbr][key], g = p.g;
+        if (p.pos==='QB') {
+          s.cmp  = (s.cmp||0)  + (g.comp||0);
+          s.att  = (s.att||0)  + (g.att||0);
+          s.yds  = (s.yds||0)  + (g.yds||0);
+          s.td   = (s.td||0)   + (g.td||0);
+          s.int  = (s.int||0)  + (g.int||0);
+          s.sack = (s.sack||0) + (g.sack||0);
+        } else if (p.pos==='RB') {
+          s.car  = (s.car||0)  + (g.car||0);
+          s.yds  = (s.yds||0)  + (g.yds||0);
+          s.td   = (s.td||0)   + (g.td||0);
+        } else if (p.pos==='WR') {
+          s.rec  = (s.rec||0)  + (g.rec||0);
+          s.tgt  = (s.tgt||0)  + (g.tgt||0);
+          s.yds  = (s.yds||0)  + (g.yds||0);
+          s.td   = (s.td||0)   + (g.td||0);
+        } else if (p.pos==='K') {
+          s.fgm  = (s.fgm||0)  + (g.fgm||0);
+          s.fga  = (s.fga||0)  + (g.fga||0);
+        }
+      });
+    });
+    localStorage.setItem('gridiron_player_stats', JSON.stringify(pStats));
+
+    // Update season schedule result for BUF's game
+    try {
+      var season = JSON.parse(localStorage.getItem('gridiron_season') || 'null');
+      if (season && season.results && season.results[season.week-1]) {
+        var weekResults = season.results[season.week-1];
+        for (var i=0; i<weekResults.length; i++) {
+          var gr = weekResults[i];
+          if ((gr.away==='BUF'||gr.home==='BUF') && !gr.played) {
+            gr.awayScore = G.awayScore;
+            gr.homeScore = G.homeScore;
+            gr.winner    = result.winner;
+            gr.played    = true;
+            break;
+          }
+        }
+        localStorage.setItem('gridiron_season', JSON.stringify(season));
+      }
+    } catch(e3) {}
+  } catch(e) {}
+}
+
+function endQuarter() {
+  if (G.quarter<4) {
+    G.quarter++; G.secs=900;
+    if (G.quarter===3) {
+      G.poss = (OPENING_RECEIVE==='away') ? 'home' : 'away';
+      G.yardLine=25; G.down=1; G.ytg=10;
+      log('\u2014 HALFTIME. '+TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore+'. Second half underway. \u2014','sys');
+    } else {
+      log('\u2014 End of Q'+(G.quarter-1)+'. '+TEAMS.away.abbr+' '+G.awayScore+' \u2013 '+TEAMS.home.abbr+' '+G.homeScore+'. \u2014','sys');
+    }
+  } else {
+    G.over=true; stopCD();
+    var w = G.awayScore>G.homeScore?TEAMS.away:G.homeScore>G.awayScore?TEAMS.home:null;
+    log('\ud83c\udfc1 FINAL \u2014 '+TEAMS.away.city+' '+G.awayScore+', '+TEAMS.home.city+' '+G.homeScore+'.',
+        'td', w ? w.city+' '+w.name+' win.' : 'Tied.');
+    saveResult();
+  }
+}
+
+// ── DEV PANEL ─────────────────────────────────────────────────
+function devTogglePanel() {
+  document.getElementById('dev-panel').classList.toggle('open');
+}
+function devSkipQuarter() {
+  if (G.over) return;
+  stopCD(); G.secs=0; endQuarter(); ui();
+  if (!G.over) setTimeout(startCD, 500);
+}
+function devEndGame() {
+  if (G.over) return;
+  stopCD(); G.quarter=4; G.secs=0; endQuarter(); ui();
+}
+function devNextPlay() {
+  if (G.over) return;
+  stopCD(); firePlay();
+}
+function devToggleFast() {
+  DEV_FAST = !DEV_FAST;
+  var btn = document.getElementById('dev-fast-btn');
+  btn.textContent = 'Fast Mode: '+(DEV_FAST ? 'ON' : 'OFF');
+  btn.classList.toggle('active', DEV_FAST);
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key==='`'||e.key==='~') devTogglePanel();
+});
+
+// ── Dynamic opponent + roster loading ─────────────────────────
+(function() {
+  // Load opponent from current week's season schedule
+  try {
+    var season = JSON.parse(localStorage.getItem('gridiron_season') || 'null');
+    if (season && season.schedule && season.schedule[season.week-1]) {
+      var wk = season.schedule[season.week-1];
+      for (var i=0; i<wk.length; i++) {
+        var g = wk[i];
+        if (g.away==='BUF' || g.home==='BUF') {
+          var oppAbbr = g.away==='BUF' ? g.home : g.away;
+          var oppData = TEAMS_LOOKUP[oppAbbr];
+          if (oppData) {
+            TEAMS.home = { city:oppData.city, name:oppData.name, abbr:oppAbbr };
+            // Patch scorebug DOM
+            var sbHome = document.querySelector('.sb-home');
+            if (sbHome) {
+              sbHome.querySelector('.sb-abbr').textContent = oppAbbr;
+              sbHome.querySelector('.sb-name').textContent = oppData.name;
+            }
+            // Update default roster name
+            ROSTERS.home.forEach(function(p) {
+              p.name = oppData.city.split(' ')[0] + ' ' + p.pos;
+            });
+          }
+          break;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Load rosters from draft localStorage
+  try {
+    var draftRoster = JSON.parse(localStorage.getItem('gridiron_roster') || 'null');
+    if (draftRoster) {
+      ['away','home'].forEach(function(side) {
+        var abbr = TEAMS[side].abbr;
+        if (draftRoster[abbr] && draftRoster[abbr].length > 0) {
+          var newRoster = [];
+          ['QB','RB','WR','K'].forEach(function(pos) {
+            draftRoster[abbr].filter(function(p){ return p.pos===pos; }).forEach(function(p) {
+              newRoster.push({ name:p.name, pos:pos });
+            });
+          });
+          if (newRoster.length > 0) ROSTERS[side] = newRoster;
+        }
+      });
+    }
+  } catch(e) {}
+})();
+
+// ── Init ──────────────────────────────────────────────────────
+initGameStats();
+log('Coin toss: '+TEAMS.away.city+' wins and elects to receive.', 'sys');
+ui();
+setTimeout(startCD, 800);
+</script>
+</body>
+</html>

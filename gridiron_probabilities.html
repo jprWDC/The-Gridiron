@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Gridiron &mdash; Play Reference</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background:#080808; color:#fff;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+      padding:28px 24px; max-width:900px; margin:0 auto;
+    }
+    header { display:flex; align-items:baseline; gap:14px; margin-bottom:24px; padding-bottom:10px; border-bottom:1px solid #1c1c1c; }
+    header h1 { font-size:18px; letter-spacing:4px; font-weight:900; text-transform:uppercase; }
+    header .sub { font-size:11px; color:#444; letter-spacing:1px; }
+    h2 { font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:12px; margin-top:28px; }
+    h2:first-of-type { margin-top:0; }
+
+    .matrix { display:grid; grid-template-columns: 110px repeat(3,1fr); gap:4px; }
+    .mx-head {
+      background:#111; border:1px solid #222; border-radius:2px;
+      padding:9px 10px; font-size:10px; font-weight:700; letter-spacing:2px;
+      text-transform:uppercase; color:rgba(255,255,255,0.35);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .mx-head.def-man  { color:#7ab8f5; border-color:#1a2e46; background:#0d1520; }
+    .mx-head.def-zone { color:#f5c87a; border-color:#46381a; background:#201800; }
+    .mx-head.def-blitz{ color:#f57a7a; border-color:#46201a; background:#200a0a; }
+    .mx-head.off-row  { justify-content:flex-start; color:rgba(255,255,255,0.6); background:#131313; }
+    .mx-head.off-run  { border-left:3px solid #7af5a0; }
+    .mx-head.off-pass { border-left:3px solid #7ab8f5; }
+    .mx-head.off-opt  { border-left:3px solid #c87af5; }
+    .mx-head.corner   { background:#080808; border-color:transparent; }
+    .mx-cell { background:#111; border:1px solid #1e1e1e; border-radius:2px; padding:12px 11px; display:flex; flex-direction:column; gap:5px; }
+    .stat { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+    .stat-label { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.3); flex-shrink:0; }
+    .stat-val   { font-size:11px; font-weight:700; text-align:right; }
+    .good   { color:#7af5a0; }
+    .ok     { color:rgba(255,255,255,0.75); }
+    .warn   { color:#f5c87a; }
+    .bad    { color:#f57a7a; }
+    .muted  { color:rgba(255,255,255,0.3); }
+    .cell-divider { height:1px; background:#1e1e1e; margin:2px 0; }
+
+    .st-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .st-card { background:#111; border:1px solid #1e1e1e; border-radius:2px; padding:14px; }
+    .st-card-title { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:11px; }
+    .fg-row { display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid #181818; }
+    .fg-row:last-of-type { border-bottom:none; }
+    .fg-dist { font-size:11px; font-weight:700; color:rgba(255,255,255,0.7); width:52px; flex-shrink:0; }
+    .fg-bar-bg { flex:1; height:6px; background:#1c1c1c; border-radius:3px; overflow:hidden; }
+    .fg-bar-fill { height:100%; border-radius:3px; }
+    .fg-pct { font-size:11px; font-weight:700; width:38px; text-align:right; flex-shrink:0; }
+    .punt-row { display:flex; align-items:baseline; justify-content:space-between; padding:5px 0; border-bottom:1px solid #181818; }
+    .punt-row:last-child { border-bottom:none; }
+    .punt-label { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.3); }
+    .punt-val   { font-size:11px; font-weight:600; color:rgba(255,255,255,0.7); }
+
+    .tov-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+    .tov-card { background:#111; border:1px solid #1e1e1e; border-radius:2px; padding:12px; display:flex; flex-direction:column; gap:4px; }
+    .tov-title { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.3); }
+    .tov-val   { font-size:20px; font-weight:900; line-height:1.1; }
+    .tov-sub   { font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; }
+
+    .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:20px; }
+    .legend span { display:flex; align-items:center; gap:5px; }
+    .leg-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+    .notes { background:#0d0d0d; border:1px solid #1a1a1a; border-radius:2px; padding:13px 14px; font-size:11px; line-height:1.8; color:rgba(255,255,255,0.45); }
+    .notes strong { color:rgba(255,255,255,0.75); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>The Gridiron</h1>
+  <span class="sub">PLAY REFERENCE &mdash; SEASON 1</span>
+</header>
+
+<div class="legend">
+  <span><span class="leg-dot" style="background:#7af5a0"></span> Good for offense</span>
+  <span><span class="leg-dot" style="background:#f5c87a"></span> Mixed / situational</span>
+  <span><span class="leg-dot" style="background:#f57a7a"></span> High risk</span>
+</div>
+
+<h2>Offense vs. Defense</h2>
+<div class="matrix">
+
+  <div class="mx-head corner"></div>
+  <div class="mx-head def-man">MAN</div>
+  <div class="mx-head def-zone">ZONE</div>
+  <div class="mx-head def-blitz">BLITZ</div>
+
+  <!-- RUN -->
+  <div class="mx-head off-row off-run">Run</div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Yards</span><span class="stat-val ok">1&ndash;12</span></div>
+    <div class="stat"><span class="stat-label">Avg</span><span class="stat-val ok">~6.5</span></div>
+    <div class="cell-divider"></div>
+    <div class="stat"><span class="stat-label">Fumble</span><span class="stat-val warn">5%</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Yards</span><span class="stat-val good">3&ndash;16</span></div>
+    <div class="stat"><span class="stat-label">Avg</span><span class="stat-val good">~9.5</span></div>
+    <div class="cell-divider"></div>
+    <div class="stat"><span class="stat-label">Fumble</span><span class="stat-val warn">5%</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Yards</span><span class="stat-val good">5&ndash;22</span></div>
+    <div class="stat"><span class="stat-label">Avg</span><span class="stat-val good">~13.5</span></div>
+    <div class="cell-divider"></div>
+    <div class="stat"><span class="stat-label">Fumble</span><span class="stat-val bad">12%</span></div>
+  </div>
+
+  <!-- PASS -->
+  <div class="mx-head off-row off-pass">Pass</div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Sack</span><span class="stat-val bad">8%</span></div>
+    <div class="stat"><span class="stat-label">INT</span><span class="stat-val bad">7%</span></div>
+    <div class="stat"><span class="stat-label">Comp</span><span class="stat-val warn">62%</span></div>
+    <div class="stat"><span class="stat-label">Range</span><span class="stat-val ok">6&ndash;28 yds</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Sack</span><span class="stat-val warn">5%</span></div>
+    <div class="stat"><span class="stat-label">INT</span><span class="stat-val warn">5%</span></div>
+    <div class="stat"><span class="stat-label">Comp</span><span class="stat-val ok">68%</span></div>
+    <div class="stat"><span class="stat-label">Range</span><span class="stat-val ok">6&ndash;28 yds</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Sack</span><span class="stat-val ok">3%</span></div>
+    <div class="stat"><span class="stat-label">INT</span><span class="stat-val bad">14%</span></div>
+    <div class="stat"><span class="stat-label">Comp</span><span class="stat-val good">70%</span></div>
+    <div class="stat"><span class="stat-label">Range</span><span class="stat-val good">6&ndash;38 yds</span></div>
+  </div>
+
+  <!-- OPTION -->
+  <div class="mx-head off-row off-opt">Option</div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Type</span><span class="stat-val muted">50/50</span></div>
+    <div class="stat"><span class="stat-label">Run avg</span><span class="stat-val ok">~6.5</span></div>
+    <div class="stat"><span class="stat-label">Pass INT</span><span class="stat-val bad">7%</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Type</span><span class="stat-val muted">50/50</span></div>
+    <div class="stat"><span class="stat-label">Run avg</span><span class="stat-val good">~9.5</span></div>
+    <div class="stat"><span class="stat-label">Pass INT</span><span class="stat-val warn">5%</span></div>
+  </div>
+  <div class="mx-cell">
+    <div class="stat"><span class="stat-label">Type</span><span class="stat-val muted">50/50</span></div>
+    <div class="stat"><span class="stat-label">Run fum.</span><span class="stat-val bad">12%</span></div>
+    <div class="stat"><span class="stat-label">Pass INT</span><span class="stat-val bad">14%</span></div>
+  </div>
+
+</div>
+
+<!-- TURNOVERS -->
+<h2>Turnover Events</h2>
+<div class="tov-grid">
+  <div class="tov-card">
+    <div class="tov-title">Fumble (run)</div>
+    <div class="tov-val warn">5%</div><div class="tov-sub">vs Man or Zone</div>
+    <div style="margin-top:8px;"><div class="tov-val bad">12%</div><div class="tov-sub">vs Blitz</div></div>
+  </div>
+  <div class="tov-card">
+    <div class="tov-title">Interception (pass)</div>
+    <div class="tov-val warn">5%</div><div class="tov-sub">vs Zone (base)</div>
+    <div style="margin-top:8px;"><div class="tov-val bad">7% / 14%</div><div class="tov-sub">vs Man / vs Blitz</div></div>
+  </div>
+  <div class="tov-card">
+    <div class="tov-title">Pick-Six</div>
+    <div class="tov-val bad" style="font-size:14px; margin-top:4px;">20% of INTs</div>
+    <div class="tov-sub" style="margin-top:6px;">Defender scores TD; original offense receives kickoff at own 25</div>
+  </div>
+  <div class="tov-card">
+    <div class="tov-title">Sack (pass)</div>
+    <div class="tov-val bad">8%</div><div class="tov-sub">vs Man</div>
+    <div style="margin-top:8px;"><div class="tov-val warn">5% / 3%</div><div class="tov-sub">vs Zone / vs Blitz</div></div>
+  </div>
+  <div class="tov-card">
+    <div class="tov-title">Sack loss</div>
+    <div class="tov-val warn" style="font-size:14px; margin-top:4px;">5&ndash;10 yards</div>
+    <div class="tov-sub" style="margin-top:6px;">Can result in a safety if sacked in own end zone</div>
+  </div>
+  <div class="tov-card">
+    <div class="tov-title">Safety</div>
+    <div class="tov-val bad" style="font-size:14px; margin-top:4px;">2 pts + free kick</div>
+    <div class="tov-sub" style="margin-top:6px;">Triggered by any play that pushes ball into own end zone. Defense receives at ~35&ndash;50.</div>
+  </div>
+</div>
+
+<!-- SPECIAL TEAMS -->
+<h2>Special Teams</h2>
+<div class="st-grid">
+  <div class="st-card">
+    <div class="st-card-title">Field Goal Success</div>
+    <div class="fg-row">
+      <span class="fg-dist">~25 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:100%;background:#7af5a0"></div></div>
+      <span class="fg-pct good">~100%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~30 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:91%;background:#7af5a0"></div></div>
+      <span class="fg-pct good">~91%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~37 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:75%;background:#a0e878"></div></div>
+      <span class="fg-pct good">~75%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~42 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:60%;background:#f5c87a"></div></div>
+      <span class="fg-pct warn">~60%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~50 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:46%;background:#f5a050"></div></div>
+      <span class="fg-pct warn">~46%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~55 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:37%;background:#f57a7a"></div></div>
+      <span class="fg-pct bad">~37%</span>
+    </div>
+    <div class="fg-row">
+      <span class="fg-dist">~60 yds</span>
+      <div class="fg-bar-bg"><div class="fg-bar-fill" style="width:28%;background:#f57a7a"></div></div>
+      <span class="fg-pct bad">~28%</span>
+    </div>
+    <div style="margin-top:10px;font-size:9px;color:rgba(255,255,255,0.25);line-height:1.6;">
+      FG button appears when ball is past your own 57. A miss gives the opponent the ball at the line of scrimmage.
+    </div>
+  </div>
+
+  <div class="st-card">
+    <div class="st-card-title">Punt</div>
+    <div class="punt-row"><span class="punt-label">Distance</span><span class="punt-val">38&ndash;57 yards</span></div>
+    <div class="punt-row"><span class="punt-label">Avg distance</span><span class="punt-val">~47 yards</span></div>
+    <div class="punt-row"><span class="punt-label">Max landing</span><span class="punt-val">Opponent's 4-yd line</span></div>
+    <div class="punt-row"><span class="punt-label">Available when</span><span class="punt-val">Ball before opp's 43</span></div>
+
+    <div style="margin-top:16px;" class="st-card-title">Kickoff (after score)</div>
+    <div class="punt-row"><span class="punt-label">Receiving team starts</span><span class="punt-val">Their own 25</span></div>
+    <div class="punt-row"><span class="punt-label">Clock penalty</span><span class="punt-val">TD: &minus;18s &middot; FG: &minus;12s</span></div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<h2>How It Works</h2>
+<div class="notes">
+  <strong>You control one team for life.</strong> When your team has the ball, you call offense: Run, Pass, Option, or Punt/Field Goal. When they're on defense, you call coverage: Man, Zone, or Blitz.<br><br>
+
+  <strong>The rock-paper-scissors:</strong> Running into a Blitz gives massive yards (5&ndash;22) but a brutal 12% fumble rate &mdash; so Blitz is a real gamble for the defense. Passing vs Blitz offers big completions (up to 38 yards) but 14% INT risk including pick-sixes. Man defense stuffs both run and pass hardest, but gives up more sacks and fewer big plays. Zone is the safest call on both sides: balanced yardage, low turnover risk.<br><br>
+
+  <strong>Voting:</strong> All fan votes accumulate during the 15-second window. The most-voted option wins. Your individual vote takes priority if you submitted one before time ran out.<br><br>
+
+  <strong>Defensive calls are private</strong> &mdash; your fanbase chooses coverage, but the opponent's fans don't see what you called. The outcomes (fumble/INT rates) are determined invisibly by the matchup.<br><br>
+
+  <strong>Game clock</strong> burns 40&ndash;63 sim-seconds per play, targeting ~17 real minutes of play. Hard stop at 25 real minutes. Ties stand in regular season &mdash; no overtime.
+</div>
+
+<div style="height:32px;"></div>
+</body>
+</html>
