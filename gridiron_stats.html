@@ -37,6 +37,7 @@
     .lb-tbl td a:hover { color:#f0c830; }
     .no-data { color:#333; font-size:12px; padding:32px 0; letter-spacing:2px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <header>
@@ -60,127 +61,54 @@
 <div class="lb-wrap" id="lb-wrap"></div>
 
 <script>
-var RAW = {};
-try { RAW = JSON.parse(localStorage.getItem('gridiron_player_stats')||'{}'); } catch(e){}
+const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-function allPlayers(pos) {
-  var list=[];
-  Object.keys(RAW).forEach(function(team){
-    Object.keys(RAW[team]).forEach(function(name){
-      var p=RAW[team][name];
-      if(p.pos===pos) list.push(Object.assign({},p,{team:team}));
-    });
-  });
-  return list;
-}
+var currentTab = 'QB';
+var allStats = [];
 
-function pctFmt(n,d) { return d?(n/d*100).toFixed(0)+'%':'—'; }
-function avgFmt(n,d) { return d?(n/d).toFixed(1):'—'; }
+function pctFmt(n,d){ return d?(n/d*100).toFixed(0)+'%':'—'; }
+function avgFmt(n,d){ return d?(n/d).toFixed(1):'—'; }
+function qbRating(p){ if(!p.att)return '—'; var a=Math.max(0,Math.min(2.375,(p.cmp/p.att-0.3)*5)); var b=Math.max(0,Math.min(2.375,(p.pass_yds/p.att-3)*0.25)); var c=Math.max(0,Math.min(2.375,p.pass_td/p.att*20)); var d=Math.max(0,Math.min(2.375,2.375-p.int_thrown/p.att*25)); return ((a+b+c+d)/6*100).toFixed(1); }
 
-function qbRating(p) {
-  if(!p.att) return 0;
-  var cmpPct=(p.cmp/p.att);
-  var ypa=(p.yds/p.att);
-  var tdRate=(p.td/p.att);
-  var intRate=(p.int/p.att);
-  var a=Math.max(0,Math.min(2.375,(cmpPct-0.3)*5));
-  var b=Math.max(0,Math.min(2.375,(ypa-3)*0.25));
-  var c=Math.max(0,Math.min(2.375,tdRate*20));
-  var d=Math.max(0,Math.min(2.375,2.375-intRate*25));
-  return ((a+b+c+d)/6*100).toFixed(1);
-}
-
-var currentTab='QB';
-
-function showTab(pos) {
-  currentTab=pos;
-  document.querySelectorAll('.pos-tab').forEach(function(btn){
-    btn.classList.toggle('active', btn.textContent===pos);
-  });
+async function loadStats(){
+  var { data } = await sb.from('player_stats').select('*');
+  allStats = data || [];
   render();
 }
 
-function render() {
+function showTab(pos){
+  currentTab=pos;
+  document.querySelectorAll('.pos-tab').forEach(function(btn){ btn.classList.toggle('active',btn.textContent===pos); });
+  render();
+}
+
+function render(){
   var wrap=document.getElementById('lb-wrap');
-  var players=allPlayers(currentTab);
-  if(!players.length){
-    wrap.innerHTML='<div class="no-data">No stats yet. Play some games first.</div>';
-    return;
-  }
+  var players=allStats.filter(function(p){return p.pos===currentTab;});
+  if(!players.length){ wrap.innerHTML='<div class="no-data">No stats yet. Play some games first.</div>'; return; }
 
   if(currentTab==='QB'){
-    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
-    var rows=players.map(function(p,i){
-      var isMine=p.team==='BUF';
-      return '<tr class="'+(isMine?'my-row':'')+'">'+
-        '<td>'+(i+1)+'</td>'+
-        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
-        '<td>'+p.team+'</td>'+
-        '<td>'+(p.cmp||0)+'</td>'+
-        '<td>'+(p.att||0)+'</td>'+
-        '<td>'+pctFmt(p.cmp||0,p.att||0)+'</td>'+
-        '<td>'+(p.yds||0)+'</td>'+
-        '<td>'+(p.td||0)+'</td>'+
-        '<td>'+(p.int||0)+'</td>'+
-        '<td>'+qbRating(p)+'</td>'+
-      '</tr>';
-    }).join('');
+    players.sort(function(a,b){return (b.pass_yds||0)-(a.pass_yds||0);});
+    var rows=players.map(function(p,i){ var isMine=p.team_abbr==='BUF'; return '<tr class="'+(isMine?'my-row':'')+'"><td>'+(i+1)+'</td><td><a href="gridiron_team.html?team='+p.team_abbr+'">'+p.player_name+'</a></td><td>'+p.team_abbr+'</td><td>'+(p.cmp||0)+'</td><td>'+(p.att||0)+'</td><td>'+pctFmt(p.cmp||0,p.att||0)+'</td><td>'+(p.pass_yds||0)+'</td><td>'+(p.pass_td||0)+'</td><td>'+(p.int_thrown||0)+'</td><td>'+qbRating(p)+'</td></tr>'; }).join('');
     wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>CMP</th><th>ATT</th><th>CMP%</th><th>YDS</th><th>TD</th><th>INT</th><th>RTG</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  }
-  else if(currentTab==='RB'){
-    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
-    var rows=players.map(function(p,i){
-      var isMine=p.team==='BUF';
-      return '<tr class="'+(isMine?'my-row':'')+'">'+
-        '<td>'+(i+1)+'</td>'+
-        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
-        '<td>'+p.team+'</td>'+
-        '<td>'+(p.car||0)+'</td>'+
-        '<td>'+(p.yds||0)+'</td>'+
-        '<td>'+avgFmt(p.yds||0,p.car||0)+'</td>'+
-        '<td>'+(p.td||0)+'</td>'+
-      '</tr>';
-    }).join('');
+  } else if(currentTab==='RB'){
+    players.sort(function(a,b){return (b.rush_yds||0)-(a.rush_yds||0);});
+    var rows=players.map(function(p,i){ var isMine=p.team_abbr==='BUF'; return '<tr class="'+(isMine?'my-row':'')+'"><td>'+(i+1)+'</td><td><a href="gridiron_team.html?team='+p.team_abbr+'">'+p.player_name+'</a></td><td>'+p.team_abbr+'</td><td>'+(p.car||0)+'</td><td>'+(p.rush_yds||0)+'</td><td>'+avgFmt(p.rush_yds||0,p.car||0)+'</td><td>'+(p.rush_td||0)+'</td></tr>'; }).join('');
     wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>CAR</th><th>YDS</th><th>AVG</th><th>TD</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  }
-  else if(currentTab==='WR'){
-    players.sort(function(a,b){return (b.yds||0)-(a.yds||0);});
-    var rows=players.map(function(p,i){
-      var isMine=p.team==='BUF';
-      return '<tr class="'+(isMine?'my-row':'')+'">'+
-        '<td>'+(i+1)+'</td>'+
-        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
-        '<td>'+p.team+'</td>'+
-        '<td>'+(p.rec||0)+'</td>'+
-        '<td>'+(p.tgt||0)+'</td>'+
-        '<td>'+pctFmt(p.rec||0,p.tgt||0)+'</td>'+
-        '<td>'+(p.yds||0)+'</td>'+
-        '<td>'+avgFmt(p.yds||0,p.rec||0)+'</td>'+
-        '<td>'+(p.td||0)+'</td>'+
-      '</tr>';
-    }).join('');
+  } else if(currentTab==='WR'){
+    players.sort(function(a,b){return (b.rec_yds||0)-(a.rec_yds||0);});
+    var rows=players.map(function(p,i){ var isMine=p.team_abbr==='BUF'; return '<tr class="'+(isMine?'my-row':'')+'"><td>'+(i+1)+'</td><td><a href="gridiron_team.html?team='+p.team_abbr+'">'+p.player_name+'</a></td><td>'+p.team_abbr+'</td><td>'+(p.rec||0)+'</td><td>'+(p.tgt||0)+'</td><td>'+pctFmt(p.rec||0,p.tgt||0)+'</td><td>'+(p.rec_yds||0)+'</td><td>'+avgFmt(p.rec_yds||0,p.rec||0)+'</td><td>'+(p.rec_td||0)+'</td></tr>'; }).join('');
     wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>REC</th><th>TGT</th><th>CAT%</th><th>YDS</th><th>AVG</th><th>TD</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  }
-  else if(currentTab==='K'){
+  } else if(currentTab==='K'){
     players.sort(function(a,b){return (b.fgm||0)-(a.fgm||0);});
-    var rows=players.map(function(p,i){
-      var isMine=p.team==='BUF';
-      var pts=(p.fgm||0)*3;
-      return '<tr class="'+(isMine?'my-row':'')+'">'+
-        '<td>'+(i+1)+'</td>'+
-        '<td><a href="gridiron_team.html?team='+p.team+'">'+p.name+'</a></td>'+
-        '<td>'+p.team+'</td>'+
-        '<td>'+(p.fgm||0)+'</td>'+
-        '<td>'+(p.fga||0)+'</td>'+
-        '<td>'+pctFmt(p.fgm||0,p.fga||0)+'</td>'+
-        '<td>'+pts+'</td>'+
-      '</tr>';
-    }).join('');
+    var rows=players.map(function(p,i){ var isMine=p.team_abbr==='BUF'; return '<tr class="'+(isMine?'my-row':'')+'"><td>'+(i+1)+'</td><td><a href="gridiron_team.html?team='+p.team_abbr+'">'+p.player_name+'</a></td><td>'+p.team_abbr+'</td><td>'+(p.fgm||0)+'</td><td>'+(p.fga||0)+'</td><td>'+pctFmt(p.fgm||0,p.fga||0)+'</td><td>'+((p.fgm||0)*3)+'</td></tr>'; }).join('');
     wrap.innerHTML='<table class="lb-tbl"><thead><tr><th>#</th><th>Player</th><th>TM</th><th>FGM</th><th>FGA</th><th>PCT</th><th>PTS</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
 }
 
-render();
+loadStats();
 </script>
 </body>
 </html>

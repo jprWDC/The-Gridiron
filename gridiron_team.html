@@ -56,6 +56,7 @@
     .game-log-tbl td.tie { color:#aaa; }
     .no-data { color:#333; font-size:12px; padding:16px 0; letter-spacing:1px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <header>
@@ -71,197 +72,100 @@
 <div id="content"></div>
 
 <script>
+const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 var TEAMS = [
-  { city:'Buffalo',       name:'Almanacs',   abbr:'BUF', conf:'AFG', div:'East'  },
-  { city:'Miami',         name:'Flamingos',  abbr:'MIA', conf:'AFG', div:'East'  },
-  { city:'New England',   name:'Puritans',   abbr:'NWE', conf:'AFG', div:'East'  },
-  { city:'New York',      name:'Pigeons',    abbr:'NYP', conf:'AFG', div:'East'  },
-  { city:'Pittsburgh',    name:'Casseroles', abbr:'PIT', conf:'AFG', div:'North' },
-  { city:'Baltimore',     name:'Tugboats',   abbr:'BAL', conf:'AFG', div:'North' },
-  { city:'Cleveland',     name:'Geology',    abbr:'CLE', conf:'AFG', div:'North' },
-  { city:'Cincinnati',    name:'Spoons',     abbr:'CIN', conf:'AFG', div:'North' },
-  { city:'Tennessee',     name:'Vowels',     abbr:'TEN', conf:'AFG', div:'South' },
-  { city:'Indianapolis',  name:'Speedway',   abbr:'IND', conf:'AFG', div:'South' },
-  { city:'Houston',       name:'Humidity',   abbr:'HOU', conf:'AFG', div:'South' },
-  { city:'Jacksonville',  name:'Mullets',    abbr:'JAX', conf:'AFG', div:'South' },
-  { city:'Kansas City',   name:'Middlemen',  abbr:'KCY', conf:'AFG', div:'West'  },
-  { city:'Las Vegas',     name:'The House',  abbr:'LVG', conf:'AFG', div:'West'  },
-  { city:'Denver',        name:'Prospectors',abbr:'DEN', conf:'AFG', div:'West'  },
-  { city:'Los Angeles',   name:'Smog',       abbr:'LAP', conf:'AFG', div:'West'  },
-  { city:'Philadelphia',  name:'Mummers',    abbr:'PHI', conf:'NFG', div:'East'  },
-  { city:'Dallas',        name:'Tycoons',    abbr:'DAL', conf:'NFG', div:'East'  },
-  { city:'New York',      name:'Gargoyles',  abbr:'NYA', conf:'NFG', div:'East'  },
-  { city:'Washington',    name:'Monuments',  abbr:'WAS', conf:'NFG', div:'East'  },
-  { city:'Chicago',       name:'Gusts',      abbr:'CHI', conf:'NFG', div:'North' },
-  { city:'Green Bay',     name:'Curds',      abbr:'GBP', conf:'NFG', div:'North' },
-  { city:'Minnesota',     name:'Loons',      abbr:'MIN', conf:'NFG', div:'North' },
-  { city:'Detroit',       name:'Potholes',   abbr:'DET', conf:'NFG', div:'North' },
-  { city:'New Orleans',   name:'Gumbo',      abbr:'NOS', conf:'NFG', div:'South' },
-  { city:'Carolina',      name:'Sweet Tea',  abbr:'CAR', conf:'NFG', div:'South' },
-  { city:'Atlanta',       name:'Offramps',   abbr:'ATL', conf:'NFG', div:'South' },
-  { city:'Tampa Bay',     name:'Manatees',   abbr:'TAM', conf:'NFG', div:'South' },
-  { city:'San Francisco', name:'Fog',        abbr:'SFO', conf:'NFG', div:'West'  },
-  { city:'Seattle',       name:'Drizzle',    abbr:'SEA', conf:'NFG', div:'West'  },
-  { city:'Los Angeles',   name:'Billboards', abbr:'LAM', conf:'NFG', div:'West'  },
-  { city:'Arizona',       name:'Mirage',     abbr:'ARI', conf:'NFG', div:'West'  },
+  { city:'Buffalo',name:'Almanacs',abbr:'BUF',conf:'AFG',div:'East' },{ city:'Miami',name:'Flamingos',abbr:'MIA',conf:'AFG',div:'East' },{ city:'New England',name:'Puritans',abbr:'NWE',conf:'AFG',div:'East' },{ city:'New York',name:'Pigeons',abbr:'NYP',conf:'AFG',div:'East' },{ city:'Pittsburgh',name:'Casseroles',abbr:'PIT',conf:'AFG',div:'North' },{ city:'Baltimore',name:'Tugboats',abbr:'BAL',conf:'AFG',div:'North' },{ city:'Cleveland',name:'Geology',abbr:'CLE',conf:'AFG',div:'North' },{ city:'Cincinnati',name:'Spoons',abbr:'CIN',conf:'AFG',div:'North' },{ city:'Tennessee',name:'Vowels',abbr:'TEN',conf:'AFG',div:'South' },{ city:'Indianapolis',name:'Speedway',abbr:'IND',conf:'AFG',div:'South' },{ city:'Houston',name:'Humidity',abbr:'HOU',conf:'AFG',div:'South' },{ city:'Jacksonville',name:'Mullets',abbr:'JAX',conf:'AFG',div:'South' },{ city:'Kansas City',name:'Middlemen',abbr:'KCY',conf:'AFG',div:'West' },{ city:'Las Vegas',name:'The House',abbr:'LVG',conf:'AFG',div:'West' },{ city:'Denver',name:'Prospectors',abbr:'DEN',conf:'AFG',div:'West' },{ city:'Los Angeles',name:'Smog',abbr:'LAP',conf:'AFG',div:'West' },
+  { city:'Philadelphia',name:'Mummers',abbr:'PHI',conf:'NFG',div:'East' },{ city:'Dallas',name:'Tycoons',abbr:'DAL',conf:'NFG',div:'East' },{ city:'New York',name:'Gargoyles',abbr:'NYA',conf:'NFG',div:'East' },{ city:'Washington',name:'Monuments',abbr:'WAS',conf:'NFG',div:'East' },{ city:'Chicago',name:'Gusts',abbr:'CHI',conf:'NFG',div:'North' },{ city:'Green Bay',name:'Curds',abbr:'GBP',conf:'NFG',div:'North' },{ city:'Minnesota',name:'Loons',abbr:'MIN',conf:'NFG',div:'North' },{ city:'Detroit',name:'Potholes',abbr:'DET',conf:'NFG',div:'North' },{ city:'New Orleans',name:'Gumbo',abbr:'NOS',conf:'NFG',div:'South' },{ city:'Carolina',name:'Sweet Tea',abbr:'CAR',conf:'NFG',div:'South' },{ city:'Atlanta',name:'Offramps',abbr:'ATL',conf:'NFG',div:'South' },{ city:'Tampa Bay',name:'Manatees',abbr:'TAM',conf:'NFG',div:'South' },{ city:'San Francisco',name:'Fog',abbr:'SFO',conf:'NFG',div:'West' },{ city:'Seattle',name:'Drizzle',abbr:'SEA',conf:'NFG',div:'West' },{ city:'Los Angeles',name:'Billboards',abbr:'LAM',conf:'NFG',div:'West' },{ city:'Arizona',name:'Mirage',abbr:'ARI',conf:'NFG',div:'West' },
 ];
 
-// Get team from URL
 var params = new URLSearchParams(window.location.search);
 var ABBR = params.get('team') || 'BUF';
 var TEAM = TEAMS.find(function(t){return t.abbr===ABBR;}) || TEAMS[0];
 document.getElementById('hdr-sub').textContent = TEAM.abbr + ' \u00b7 ' + TEAM.name.toUpperCase();
 
-// Load data
-var season = null, roster = null, pStats = {}, records = {};
-try { season = JSON.parse(localStorage.getItem('gridiron_season')||'null'); } catch(e){}
-try { roster = JSON.parse(localStorage.getItem('gridiron_roster')||'null'); } catch(e){}
-try { pStats = JSON.parse(localStorage.getItem('gridiron_player_stats')||'{}'); } catch(e){}
-
-// Compute record for this team
-function computeRecord() {
-  var r={w:0,l:0,tie:0,pf:0,pa:0};
-  if(!season) return r;
-  season.results.forEach(function(wk){
-    wk.forEach(function(g){
-      if(!g.played) return;
-      if(g.away===ABBR){r.pf+=g.awayScore;r.pa+=g.homeScore;if(g.winner==='away')r.w++;else if(g.winner==='home')r.l++;else r.tie++;}
-      else if(g.home===ABBR){r.pf+=g.homeScore;r.pa+=g.awayScore;if(g.winner==='home')r.w++;else if(g.winner==='away')r.l++;else r.tie++;}
-    });
-  });
-  return r;
-}
-
 function pct(r){var g=r.w+r.l+r.tie;return g?(r.w/g).toFixed(3).replace(/^0/,''):'—';}
-function projStr(p) {
-  if(!p.proj) return '';
-  var parts=[];
-  if(p.proj.yds)  parts.push(p.proj.yds+'yds');
-  if(p.proj.td)   parts.push(p.proj.td+'td');
-  if(p.proj.int)  parts.push(p.proj.int+'int');
-  if(p.proj.car)  parts.push(p.proj.car+'car');
-  if(p.proj.rec)  parts.push(p.proj.rec+'rec');
-  if(p.proj.fgm)  parts.push(p.proj.fgm+'fgm');
-  return parts.join(' / ');
-}
+function projStr(p){ if(!p.proj)return ''; var parts=[]; if(p.proj.yds)parts.push(p.proj.yds+'yds'); if(p.proj.td)parts.push(p.proj.td+'td'); if(p.proj.rec)parts.push(p.proj.rec+'rec'); if(p.proj.fgm)parts.push(p.proj.fgm+'fgm'); return parts.join(' / '); }
 
-// Game log
-function gameLog() {
-  var log=[];
-  if(!season) return log;
-  season.results.forEach(function(wk,wi){
-    wk.forEach(function(g){
-      if(g.away!==ABBR&&g.home!==ABBR) return;
-      var isAway=g.away===ABBR;
-      var oppAbbr=isAway?g.home:g.away;
-      var opp=TEAMS.find(function(t){return t.abbr===oppAbbr;})||{abbr:oppAbbr,name:oppAbbr};
-      var myScore=isAway?g.awayScore:g.homeScore;
-      var theirScore=isAway?g.homeScore:g.awayScore;
-      var result='—';
-      if(g.played){
-        if(g.winner==='tie') result='T';
-        else if((g.winner==='away'&&isAway)||(g.winner==='home'&&!isAway)) result='W';
-        else result='L';
-      }
-      log.push({week:wi+1,opp:opp,myScore:myScore,theirScore:theirScore,result:result,played:g.played,isAway:isAway});
-    });
+async function loadAndRender(){
+  // Compute record from games
+  var { data: games } = await sb.from('games').select('*').or('away_abbr.eq.'+ABBR+',home_abbr.eq.'+ABBR);
+  games = games || [];
+
+  var rec = {w:0,l:0,tie:0,pf:0,pa:0};
+  games.forEach(function(g){
+    if(g.status!=='final')return;
+    if(g.away_abbr===ABBR){rec.pf+=g.away_score;rec.pa+=g.home_score;if(g.winner==='away')rec.w++;else if(g.winner==='home')rec.l++;else rec.tie++;}
+    else{rec.pf+=g.home_score;rec.pa+=g.away_score;if(g.winner==='home')rec.w++;else if(g.winner==='away')rec.l++;else rec.tie++;}
   });
-  return log;
-}
 
-// Render
-var rec = computeRecord();
-var teamRoster = (roster && roster[ABBR]) ? roster[ABBR] : null;
-var teamStats = pStats[ABBR] || {};
-var log = gameLog();
+  // Get player stats
+  var { data: teamStats } = await sb.from('player_stats').select('*').eq('team_abbr',ABBR);
+  teamStats = teamStats || [];
 
-var html='';
+  // Get roster from localStorage (draft still local)
+  var teamRoster = null;
+  try { var r=JSON.parse(localStorage.getItem('gridiron_roster')||'null'); if(r&&r[ABBR])teamRoster=r[ABBR]; } catch(e){}
 
-// Hero
-html+='<div class="team-hero">'+
-  '<div class="hero-abbr">'+TEAM.abbr+'</div>'+
-  '<div class="hero-info">'+
-    '<div class="hero-city">'+TEAM.city+'</div>'+
-    '<div class="hero-name">'+TEAM.name+'</div>'+
-    '<div class="hero-conf">'+TEAM.conf+' &middot; '+TEAM.div+'</div>'+
-  '</div>'+
-  '<div>'+
-    '<div class="hero-record">'+rec.w+'-'+rec.l+(rec.tie?'-'+rec.tie:'')+'</div>'+
-    '<div class="hero-pct">'+pct(rec)+' PCT &middot; '+rec.pf+' PF &middot; '+rec.pa+' PA</div>'+
-  '</div>'+
-'</div>';
+  // Game log
+  var { data: season } = await sb.from('seasons').select('week').eq('id',1).maybeSingle();
+  var gameLog = games.filter(function(g){return g.status==='final';}).map(function(g){
+    var isAway=g.away_abbr===ABBR;
+    var oppAbbr=isAway?g.home_abbr:g.away_abbr;
+    var opp=TEAMS.find(function(t){return t.abbr===oppAbbr;})||{abbr:oppAbbr,name:oppAbbr};
+    var myScore=isAway?g.away_score:g.home_score;
+    var theirScore=isAway?g.home_score:g.away_score;
+    var result=g.winner==='tie'?'T':(g.winner==='away'&&isAway||g.winner==='home'&&!isAway)?'W':'L';
+    return {week:g.season_week,opp:opp,myScore:myScore,theirScore:theirScore,result:result};
+  }).sort(function(a,b){return a.week-b.week;});
 
-// Roster
-html+='<div class="sec-hdr">Roster</div>';
-if (teamRoster && teamRoster.length) {
-  html+='<div class="roster-grid">';
-  ['QB','RB','WR','K'].forEach(function(pos){
-    var players=teamRoster.filter(function(p){return p.pos===pos;});
-    var posClass='pos-'+pos.toLowerCase();
-    html+='<div class="pos-group '+posClass+'"><div class="pos-group-title">'+pos+'</div>';
-    if(!players.length){ html+='<div class="no-data">None drafted</div>'; }
-    players.forEach(function(p){
-      var ovrColor=p.ovr>=16?'#f0c830':p.ovr>=12?'#7af5a0':p.ovr>=8?'#888':'#555';
-      html+='<div class="player-card">'+
-        '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
-          '<span class="pc-name">'+p.name+'</span>'+
-          '<span class="pc-ovr" style="color:'+ovrColor+'">'+p.ovr+'</span>'+
-        '</div>'+
-        (p.proj?'<div class="pc-proj">proj: '+projStr(p)+'</div>':'')+
-      '</div>';
+  // Build HTML
+  var html='';
+  html+='<div class="team-hero"><div class="hero-abbr">'+TEAM.abbr+'</div><div class="hero-info"><div class="hero-city">'+TEAM.city+'</div><div class="hero-name">'+TEAM.name+'</div><div class="hero-conf">'+TEAM.conf+' &middot; '+TEAM.div+'</div></div><div><div class="hero-record">'+rec.w+'-'+rec.l+(rec.tie?'-'+rec.tie:'')+'</div><div class="hero-pct">'+pct(rec)+' PCT &middot; '+rec.pf+' PF &middot; '+rec.pa+' PA</div></div></div>';
+
+  html+='<div class="sec-hdr">Roster</div>';
+  if(teamRoster&&teamRoster.length){
+    html+='<div class="roster-grid">';
+    ['QB','RB','WR','K'].forEach(function(pos){
+      var players=teamRoster.filter(function(p){return p.pos===pos;});
+      var posClass='pos-'+pos.toLowerCase();
+      html+='<div class="pos-group '+posClass+'"><div class="pos-group-title">'+pos+'</div>';
+      players.forEach(function(p){
+        var ovrColor=p.ovr>=16?'#f0c830':p.ovr>=12?'#7af5a0':p.ovr>=8?'#888':'#555';
+        html+='<div class="player-card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="pc-name">'+p.name+'</span><span class="pc-ovr" style="color:'+ovrColor+'">'+p.ovr+'</span></div>'+(p.proj?'<div class="pc-proj">proj: '+projStr(p)+'</div>':'')+'</div>';
+      });
+      html+='</div>';
     });
     html+='</div>';
-  });
-  html+='</div>';
-} else {
-  html+='<div class="no-data">Draft hasn\'t happened yet. <a href="gridiron_draft.html" style="color:#f0c830">Go to Draft &rarr;</a></div>';
+  } else { html+='<div class="no-data">Draft hasn\'t happened yet. <a href="gridiron_draft.html" style="color:#f0c830">Go to Draft &rarr;</a></div>'; }
+
+  html+='<div class="sec-hdr">Season Stats</div>';
+  if(teamStats.length){
+    html+='<div class="stat-row">';
+    teamStats.forEach(function(p){
+      var posColor={QB:'#7ab8f5',RB:'#7af5a0',WR:'#f5c87a',K:'#d07af5'}[p.pos]||'#888';
+      var line='';
+      if(p.pos==='QB') line=(p.cmp||0)+'/'+(p.att||0)+', '+(p.pass_yds||0)+' yds, '+(p.pass_td||0)+' TD, '+(p.int_thrown||0)+' INT';
+      else if(p.pos==='RB') line=(p.car||0)+' car, '+(p.rush_yds||0)+' yds, '+(p.rush_td||0)+' TD';
+      else if(p.pos==='WR') line=(p.rec||0)+'/'+(p.tgt||0)+', '+(p.rec_yds||0)+' yds, '+(p.rec_td||0)+' TD';
+      else if(p.pos==='K') line=(p.fgm||0)+'/'+(p.fga||0)+' FG';
+      html+='<div class="stat-card"><div class="sc-pos" style="color:'+posColor+'">'+p.pos+'</div><div class="sc-name">'+p.player_name+'</div><div class="sc-line">'+line+'</div></div>';
+    });
+    html+='</div>';
+  } else { html+='<div class="no-data">No stats yet.</div>'; }
+
+  html+='<div class="sec-hdr">Game Log</div>';
+  if(gameLog.length){
+    var rows=gameLog.map(function(g){ var cls=g.result==='W'?'win':g.result==='L'?'loss':'tie'; return '<tr><td>Wk '+g.week+'</td><td>'+(g.away?'@ ':'')+' <a href="gridiron_team.html?team='+g.opp.abbr+'">'+g.opp.abbr+'</a></td><td class="'+cls+'">'+g.result+'</td><td>'+g.myScore+' \u2013 '+g.theirScore+'</td></tr>'; }).join('');
+    html+='<table class="game-log-tbl"><thead><tr><th>Week</th><th>Opp</th><th>Result</th><th>Score</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  } else { html+='<div class="no-data">No games played yet.</div>'; }
+
+  document.getElementById('content').innerHTML=html;
 }
 
-// Season Stats
-html+='<div class="sec-hdr">Season Stats</div>';
-var statCards=Object.keys(teamStats).filter(function(k){return teamStats[k];});
-if (statCards.length) {
-  html+='<div class="stat-row">';
-  statCards.forEach(function(name){
-    var p=teamStats[name];
-    var posColor={QB:'#7ab8f5',RB:'#7af5a0',WR:'#f5c87a',K:'#d07af5'}[p.pos]||'#888';
-    var line='';
-    if(p.pos==='QB') line=(p.cmp||0)+'/'+(p.att||0)+', '+(p.yds||0)+' yds, '+(p.td||0)+' TD, '+(p.int||0)+' INT';
-    else if(p.pos==='RB') line=(p.car||0)+' car, '+(p.yds||0)+' yds, '+(p.td||0)+' TD';
-    else if(p.pos==='WR') line=(p.rec||0)+'/'+(p.tgt||0)+', '+(p.yds||0)+' yds, '+(p.td||0)+' TD';
-    else if(p.pos==='K') line=(p.fgm||0)+'/'+(p.fga||0)+' FG';
-    html+='<div class="stat-card">'+
-      '<div class="sc-pos" style="color:'+posColor+'">'+p.pos+'</div>'+
-      '<div class="sc-name">'+name+'</div>'+
-      '<div class="sc-line">'+line+'</div>'+
-    '</div>';
-  });
-  html+='</div>';
-} else {
-  html+='<div class="no-data">No stats yet. Games must be played first.</div>';
-}
-
-// Game Log
-html+='<div class="sec-hdr">Game Log</div>';
-if(log.length){
-  var logRows=log.map(function(g){
-    var cls=g.played?(g.result==='W'?'win':g.result==='L'?'loss':'tie'):'';
-    var score=g.played?g.myScore+' \u2013 '+g.theirScore:'vs';
-    return '<tr>'+
-      '<td>Wk '+g.week+'</td>'+
-      '<td>'+(g.isAway?'@ ':'vs ')+
-        '<a href="gridiron_team.html?team='+g.opp.abbr+'">'+g.opp.abbr+'</a>'+
-      '</td>'+
-      '<td class="'+cls+'">'+(g.played?g.result:'—')+'</td>'+
-      '<td>'+score+'</td>'+
-    '</tr>';
-  }).join('');
-  html+='<table class="game-log-tbl"><thead><tr><th>Week</th><th>Opponent</th><th>Result</th><th>Score</th></tr></thead><tbody>'+logRows+'</tbody></table>';
-} else {
-  html+='<div class="no-data">Season hasn\'t started. <a href="gridiron_season.html" style="color:#f0c830">Go to Season &rarr;</a></div>';
-}
-
-document.getElementById('content').innerHTML=html;
+loadAndRender();
 </script>
 </body>
 </html>

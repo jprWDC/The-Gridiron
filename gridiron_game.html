@@ -128,6 +128,7 @@
     .dev-btn.active { background:#300; border-color:#c00; color:#f00; }
     .dev-sep { width:1px; height:16px; background:#3a0000; flex-shrink:0; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -135,6 +136,7 @@
   <h1>The Gridiron</h1>
   <span class="sub">SEASON 1 &middot; WEEK 1</span>
   <div class="nav-links">
+    <a href="gridiron_auth.html" id="auth-nav">Sign In</a>
     <a href="gridiron_season.html">Season</a>
     <a href="gridiron_stats.html">Stats</a>
     <a href="gridiron_draft.html">Draft</a>
@@ -788,36 +790,79 @@ function flipPoss() {
 }
 
 // ── QUARTER / GAME END ────────────────────────────────────────
-function saveResult() {
-  try {
-    var result = {
-      ts: new Date().toISOString(),
-      away: TEAMS.away.abbr, awayScore: G.awayScore,
-      home: TEAMS.home.abbr, homeScore: G.homeScore,
-      winner: G.awayScore>G.homeScore ? 'away' : G.homeScore>G.awayScore ? 'home' : 'tie'
-    };
-    var history = JSON.parse(localStorage.getItem('gridiron_results') || '[]');
-    history.push(result);
-    localStorage.setItem('gridiron_results', JSON.stringify(history));
+const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    // Save player stats (accumulate into gridiron_player_stats)
-    var pStats = {};
-    try { pStats = JSON.parse(localStorage.getItem('gridiron_player_stats') || '{}'); } catch(e2) {}
-    ['away','home'].forEach(function(side) {
+async function saveResult() {
+  var winner = G.awayScore>G.homeScore?'away':G.homeScore>G.awayScore?'home':'tie';
+  // Save to localStorage (keep for backward compat)
+  try {
+    var result = { ts:new Date().toISOString(), away:TEAMS.away.abbr, awayScore:G.awayScore, home:TEAMS.home.abbr, homeScore:G.homeScore, winner:winner };
+    var history = JSON.parse(localStorage.getItem('gridiron_results')||'[]'); history.push(result);
+    localStorage.setItem('gridiron_results', JSON.stringify(history));
+  } catch(e) {}
+
+  // Save to Supabase — find the matching game row
+  try {
+    var { data: season } = await sb.from('seasons').select('week').eq('id',1).single();
+    if (season) {
+      var week = season.week;
+      var bufAbbr = TEAMS.away.abbr==='BUF' ? 'BUF' : TEAMS.home.abbr;
+      var oppAbbr = TEAMS.away.abbr==='BUF' ? TEAMS.home.abbr : TEAMS.away.abbr;
+      var { data: gameRow } = await sb.from('games').select('id')
+        .eq('season_week', week)
+        .or('and(away_abbr.eq.BUF,home_abbr.eq.'+oppAbbr+'),and(away_abbr.eq.'+oppAbbr+',home_abbr.eq.BUF)')
+        .maybeSingle();
+      if (gameRow) {
+        await sb.from('games').update({
+          away_score: G.awayScore, home_score: G.homeScore,
+          status: 'final', winner: winner, quarter: 4, secs: 0,
+          updated_at: new Date().toISOString()
+        }).eq('id', gameRow.id);
+      }
+    }
+  } catch(e) {}
+
+  // Save player stats to Supabase
+  try {
+    for (var si=0; si<['away','home'].length; si++) {
+      var side=['away','home'][si];
       var abbr = TEAMS[side].abbr;
-      if (!pStats[abbr]) pStats[abbr] = {};
-      ROSTERS[side].forEach(function(p) {
-        if (!p.g) return;
-        var key = p.name;
-        if (!pStats[abbr][key]) pStats[abbr][key] = { name:p.name, pos:p.pos };
-        var s = pStats[abbr][key], g = p.g;
-        if (p.pos==='QB') {
-          s.cmp  = (s.cmp||0)  + (g.comp||0);
-          s.att  = (s.att||0)  + (g.att||0);
-          s.yds  = (s.yds||0)  + (g.yds||0);
-          s.td   = (s.td||0)   + (g.td||0);
-          s.int  = (s.int||0)  + (g.int||0);
-          s.sack = (s.sack||0) + (g.sack||0);
+      for (var pi=0; pi<ROSTERS[side].length; pi++) {
+        var p = ROSTERS[side][pi];
+        if (!p.g) continue;
+        var g = p.g;
+        // Fetch existing
+        var { data: ex } = await sb.from('player_stats').select('*').eq('team_abbr',abbr).eq('player_name',p.name).maybeSingle();
+        var row = { team_abbr:abbr, player_name:p.name, pos:p.pos };
+        if (p.pos==='QB') { row.cmp=(ex&&ex.cmp||0)+(g.comp||0); row.att=(ex&&ex.att||0)+(g.att||0); row.pass_yds=(ex&&ex.pass_yds||0)+(g.yds||0); row.pass_td=(ex&&ex.pass_td||0)+(g.td||0); row.int_thrown=(ex&&ex.int_thrown||0)+(g.int||0); }
+        else if (p.pos==='RB') { row.car=(ex&&ex.car||0)+(g.car||0); row.rush_yds=(ex&&ex.rush_yds||0)+(g.yds||0); row.rush_td=(ex&&ex.rush_td||0)+(g.td||0); }
+        else if (p.pos==='WR') { row.rec=(ex&&ex.rec||0)+(g.rec||0); row.tgt=(ex&&ex.tgt||0)+(g.tgt||0); row.rec_yds=(ex&&ex.rec_yds||0)+(g.yds||0); row.rec_td=(ex&&ex.rec_td||0)+(g.td||0); }
+        else if (p.pos==='K') { row.fgm=(ex&&ex.fgm||0)+(g.fgm||0); row.fga=(ex&&ex.fga||0)+(g.fga||0); }
+        await sb.from('player_stats').upsert(row, {onConflict:'team_abbr,player_name'});
+      }
+    }
+  } catch(e) {}
+
+  // Save player stats (accumulate into gridiron_player_stats)
+  var pStats = {};
+  try { pStats = JSON.parse(localStorage.getItem('gridiron_player_stats') || '{}'); } catch(e2) {}
+  ['away','home'].forEach(function(side) {
+    var abbr = TEAMS[side].abbr;
+    if (!pStats[abbr]) pStats[abbr] = {};
+    ROSTERS[side].forEach(function(p) {
+      if (!p.g) return;
+      var key = p.name;
+      if (!pStats[abbr][key]) pStats[abbr][key] = { name:p.name, pos:p.pos };
+      var s = pStats[abbr][key], g = p.g;
+      if (p.pos==='QB') {
+        s.cmp  = (s.cmp||0)  + (g.comp||0);
+        s.att  = (s.att||0)  + (g.att||0);
+        s.yds  = (s.yds||0)  + (g.yds||0);
+        s.td   = (s.td||0)   + (g.td||0);
+        s.int  = (s.int||0)  + (g.int||0);
+        s.sack = (s.sack||0) + (g.sack||0);
         } else if (p.pos==='RB') {
           s.car  = (s.car||0)  + (g.car||0);
           s.yds  = (s.yds||0)  + (g.yds||0);
@@ -952,6 +997,9 @@ document.addEventListener('keydown', function(e) {
     }
   } catch(e) {}
 })();
+
+// Check auth for nav
+(function(){ sb.auth.getUser().then(function(r){ if(r.data.user){ var a=document.getElementById('auth-nav'); if(a){ a.textContent='My Account'; a.style.color='#f0c830'; } } }); })();
 
 // ── Init ──────────────────────────────────────────────────────
 initGameStats();

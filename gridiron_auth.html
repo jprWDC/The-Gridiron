@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Gridiron | Sign In</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#080808; color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+    .card { background:#111; border:1px solid #1e1e1e; border-radius:3px; padding:32px; width:100%; max-width:400px; }
+    .logo { font-size:16px; letter-spacing:4px; font-weight:900; text-transform:uppercase; color:#f0c830; margin-bottom:6px; }
+    .tagline { font-size:11px; color:#444; letter-spacing:1px; margin-bottom:28px; }
+    .tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:1px solid #1e1e1e; }
+    .tab { padding:8px 18px; font-size:11px; font-weight:700; letter-spacing:1px; color:#444; cursor:pointer; text-transform:uppercase; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
+    .tab.active { color:#f0c830; border-bottom-color:#f0c830; }
+    .field { margin-bottom:14px; }
+    label { display:block; font-size:9px; font-weight:700; letter-spacing:1px; color:#555; text-transform:uppercase; margin-bottom:5px; }
+    input, select { width:100%; background:#0a0a0a; border:1px solid #222; border-radius:2px; padding:9px 10px; color:#fff; font-size:12px; font-family:inherit; outline:none; transition:border-color .15s; }
+    input:focus, select:focus { border-color:#555; }
+    select option { background:#111; }
+    .btn { width:100%; padding:11px; background:#f0c830; color:#000; border:none; border-radius:2px; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; font-family:inherit; transition:background .12s; margin-top:6px; }
+    .btn:hover { background:#ffe566; }
+    .btn:disabled { background:#333; color:#666; cursor:not-allowed; }
+    .msg { margin-top:14px; font-size:11px; text-align:center; min-height:16px; }
+    .msg.err { color:#e06060; }
+    .msg.ok { color:#3db86a; }
+    .back { display:block; text-align:center; margin-top:20px; font-size:10px; color:#444; text-decoration:none; letter-spacing:1px; }
+    .back:hover { color:#f0c830; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">The Gridiron</div>
+  <div class="tagline">SEASON 1 — PICK YOUR TEAM</div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('signin')">Sign In</div>
+    <div class="tab" onclick="switchTab('signup')">Create Account</div>
+  </div>
+
+  <!-- Sign In -->
+  <div id="form-signin">
+    <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input type="password" id="si-pass" placeholder="••••••••"></div>
+    <button class="btn" onclick="doSignIn()">Sign In</button>
+    <div class="msg" id="si-msg"></div>
+  </div>
+
+  <!-- Sign Up -->
+  <div id="form-signup" style="display:none">
+    <div class="field"><label>Display Name</label><input type="text" id="su-name" placeholder="Your name"></div>
+    <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input type="password" id="su-pass" placeholder="at least 6 characters"></div>
+    <div class="field">
+      <label>Your Team</label>
+      <select id="su-team">
+        <optgroup label="AFG East"><option value="BUF">Buffalo Almanacs</option><option value="MIA">Miami Flamingos</option><option value="NWE">New England Puritans</option><option value="NYP">New York Pigeons</option></optgroup>
+        <optgroup label="AFG North"><option value="PIT">Pittsburgh Casseroles</option><option value="BAL">Baltimore Tugboats</option><option value="CLE">Cleveland Geology</option><option value="CIN">Cincinnati Spoons</option></optgroup>
+        <optgroup label="AFG South"><option value="TEN">Tennessee Vowels</option><option value="IND">Indianapolis Speedway</option><option value="HOU">Houston Humidity</option><option value="JAX">Jacksonville Mullets</option></optgroup>
+        <optgroup label="AFG West"><option value="KCY">Kansas City Middlemen</option><option value="LVG">Las Vegas The House</option><option value="DEN">Denver Prospectors</option><option value="LAP">Los Angeles Smog</option></optgroup>
+        <optgroup label="NFG East"><option value="PHI">Philadelphia Mummers</option><option value="DAL">Dallas Tycoons</option><option value="NYA">New York Gargoyles</option><option value="WAS">Washington Monuments</option></optgroup>
+        <optgroup label="NFG North"><option value="CHI">Chicago Gusts</option><option value="GBP">Green Bay Curds</option><option value="MIN">Minnesota Loons</option><option value="DET">Detroit Potholes</option></optgroup>
+        <optgroup label="NFG South"><option value="NOS">New Orleans Gumbo</option><option value="CAR">Carolina Sweet Tea</option><option value="ATL">Atlanta Offramps</option><option value="TAM">Tampa Bay Manatees</option></optgroup>
+        <optgroup label="NFG West"><option value="SFO">San Francisco Fog</option><option value="SEA">Seattle Drizzle</option><option value="LAM">Los Angeles Billboards</option><option value="ARI">Arizona Mirage</option></optgroup>
+      </select>
+    </div>
+    <button class="btn" onclick="doSignUp()">Create Account</button>
+    <div class="msg" id="su-msg"></div>
+  </div>
+
+  <a class="back" href="gridiron_season.html">← Back to Season (no account)</a>
+</div>
+
+<script>
+const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Redirect if already signed in
+sb.auth.getSession().then(function(r) {
+  if (r.data.session) window.location.href = 'gridiron_season.html';
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t,i){ t.classList.toggle('active', (i===0&&tab==='signin')||(i===1&&tab==='signup')); });
+  document.getElementById('form-signin').style.display = tab==='signin'?'':'none';
+  document.getElementById('form-signup').style.display = tab==='signup'?'':'none';
+}
+
+async function doSignIn() {
+  var email = document.getElementById('si-email').value.trim();
+  var pass  = document.getElementById('si-pass').value;
+  var msg   = document.getElementById('si-msg');
+  msg.className='msg'; msg.textContent='Signing in…';
+  var { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { msg.className='msg err'; msg.textContent=error.message; return; }
+  window.location.href = 'gridiron_season.html';
+}
+
+async function doSignUp() {
+  var name  = document.getElementById('su-name').value.trim();
+  var email = document.getElementById('su-email').value.trim();
+  var pass  = document.getElementById('su-pass').value;
+  var team  = document.getElementById('su-team').value;
+  var msg   = document.getElementById('su-msg');
+  if (!name||!email||!pass||!team) { msg.className='msg err'; msg.textContent='All fields required.'; return; }
+  msg.className='msg'; msg.textContent='Creating account…';
+  var { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) { msg.className='msg err'; msg.textContent=error.message; return; }
+  if (data.user) {
+    await sb.from('profiles').insert({ id: data.user.id, display_name: name, team_abbr: team });
+  }
+  msg.className='msg ok'; msg.textContent='Account created! Redirecting…';
+  setTimeout(function(){ window.location.href = 'gridiron_season.html'; }, 1000);
+}
+</script>
+</body>
+</html>

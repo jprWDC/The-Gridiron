@@ -105,6 +105,7 @@
     .dev-btn:hover { background:#2e0000; border-color:#800; color:#ff8080; }
     .dev-sep { width:1px; height:16px; background:#3a0000; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -146,7 +147,10 @@
 <div class="bracket-wrap" id="bracket-wrap"></div>
 
 <script>
-// ── Teams ──────────────────────────────────────────────────────
+const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 var TEAMS = [
   { city:'Buffalo',       name:'Almanacs',   abbr:'BUF', conf:'AFG', div:'East'  },
   { city:'Miami',         name:'Flamingos',  abbr:'MIA', conf:'AFG', div:'East'  },
@@ -184,243 +188,145 @@ var TEAMS = [
 var TEAM_MAP = {};
 TEAMS.forEach(function(t){ TEAM_MAP[t.abbr]=t; });
 
-// ── Schedule Generation ────────────────────────────────────────
+var S = null;       // season row from DB
+var allGames = [];  // all game rows from DB for current view
+var viewWeek = 1;
+var MY_TEAM = null; // logged-in user's team
+var realtimeChannel = null;
+
+// ── Schedule Generation (same algorithm as before) ─────────────
 function generateSchedule() {
-  var allGames = [];
-  var playCount = {};
-  var teamTotal = {};
-  TEAMS.forEach(function(a){
-    teamTotal[a.abbr]=0;
-    TEAMS.forEach(function(b){ playCount[a.abbr+'_'+b.abbr]=0; });
-  });
-  function addGame(aw, ho) {
-    allGames.push({away:aw,home:ho});
-    teamTotal[aw]++; teamTotal[ho]++;
-    playCount[aw+'_'+ho]++; playCount[ho+'_'+aw]++;
-  }
-  // Division games (home+away)
-  for (var i=0;i<TEAMS.length;i++){
-    for (var j=i+1;j<TEAMS.length;j++){
-      if(TEAMS[i].conf===TEAMS[j].conf&&TEAMS[i].div===TEAMS[j].div){
-        addGame(TEAMS[i].abbr,TEAMS[j].abbr);
-        addGame(TEAMS[j].abbr,TEAMS[i].abbr);
-      }
-    }
-  }
-  // Fill to 17 per team
+  var allG = [], playCount = {}, teamTotal = {};
+  TEAMS.forEach(function(a){ teamTotal[a.abbr]=0; TEAMS.forEach(function(b){ playCount[a.abbr+'_'+b.abbr]=0; }); });
+  function addGame(aw,ho){ allG.push({away:aw,home:ho}); teamTotal[aw]++; teamTotal[ho]++; playCount[aw+'_'+ho]++; playCount[ho+'_'+aw]++; }
+  for(var i=0;i<TEAMS.length;i++) for(var j=i+1;j<TEAMS.length;j++) if(TEAMS[i].conf===TEAMS[j].conf&&TEAMS[i].div===TEAMS[j].div){ addGame(TEAMS[i].abbr,TEAMS[j].abbr); addGame(TEAMS[j].abbr,TEAMS[i].abbr); }
   var attempts=0;
-  while(allGames.length<272&&attempts<80000){
-    attempts++;
-    var needMore=TEAMS.filter(function(t){return teamTotal[t.abbr]<17;});
-    if(!needMore.length) break;
-    var a=needMore[Math.floor(Math.random()*needMore.length)];
-    var valid=TEAMS.filter(function(t){
-      return t.abbr!==a.abbr&&teamTotal[t.abbr]<17&&playCount[a.abbr+'_'+t.abbr]<2;
-    });
-    if(!valid.length) continue;
-    var b=valid[Math.floor(Math.random()*valid.length)];
-    Math.random()<0.5?addGame(a.abbr,b.abbr):addGame(b.abbr,a.abbr);
-  }
-  // Shuffle
-  for(var s=allGames.length-1;s>0;s--){
-    var r=Math.floor(Math.random()*(s+1));
-    var tmp=allGames[s];allGames[s]=allGames[r];allGames[r]=tmp;
-  }
-  // Assign to 17 weeks greedily
-  var weeks=[];
-  for(var w=0;w<17;w++) weeks.push([]);
-  for(var gi=0;gi<allGames.length;gi++){
-    var game=allGames[gi];
-    // Try each week in order (prefer earliest with space)
-    var weekOrder=[];
-    for(var w=0;w<17;w++) weekOrder.push(w);
-    weekOrder.sort(function(){return Math.random()-0.5;});
-    for(var wi=0;wi<weekOrder.length;wi++){
-      var ww=weekOrder[wi];
-      if(weeks[ww].length>=16) continue;
-      var busy={};
-      weeks[ww].forEach(function(g){busy[g.away]=true;busy[g.home]=true;});
-      if(!busy[game.away]&&!busy[game.home]){
-        weeks[ww].push(game); break;
-      }
-    }
-  }
+  while(allG.length<272&&attempts<80000){ attempts++; var need=TEAMS.filter(function(t){return teamTotal[t.abbr]<17;}); if(!need.length)break; var a=need[Math.floor(Math.random()*need.length)]; var valid=TEAMS.filter(function(t){return t.abbr!==a.abbr&&teamTotal[t.abbr]<17&&playCount[a.abbr+'_'+t.abbr]<2;}); if(!valid.length)continue; var b=valid[Math.floor(Math.random()*valid.length)]; Math.random()<0.5?addGame(a.abbr,b.abbr):addGame(b.abbr,a.abbr); }
+  for(var s=allG.length-1;s>0;s--){ var r=Math.floor(Math.random()*(s+1)); var tmp=allG[s];allG[s]=allG[r];allG[r]=tmp; }
+  var weeks=[]; for(var w=0;w<17;w++) weeks.push([]);
+  for(var gi=0;gi<allG.length;gi++){ var game=allG[gi]; var wo=[]; for(var w=0;w<17;w++) wo.push(w); wo.sort(function(){return Math.random()-0.5;}); for(var wi=0;wi<wo.length;wi++){ var ww=wo[wi]; if(weeks[ww].length>=16)continue; var busy={}; weeks[ww].forEach(function(g){busy[g.away]=true;busy[g.home]=true;}); if(!busy[game.away]&&!busy[game.home]){weeks[ww].push(game);break;} } }
   return weeks;
 }
 
-// ── Season State ───────────────────────────────────────────────
-var S; // season object: { week, schedule, results }
-var viewWeek; // which week we're viewing (1-indexed)
+// ── Helpers ────────────────────────────────────────────────────
+function pct(r){ var g=r.w+r.l+r.tie; return g?r.w/g:0; }
+function pctStr(r){ var g=r.w+r.l+r.tie; if(!g)return '—'; return (r.w/g).toFixed(3).replace(/^0/,''); }
+function recStr(r){ return r.w+'-'+r.l+(r.tie?'-'+r.tie:''); }
+function fmt(s){ var m=Math.floor(s/60),sec=s%60; return m+':'+(sec<10?'0':'')+sec; }
+function cmpTeam(a,b,records){ var ra=records[a.abbr],rb=records[b.abbr]; var pa=pct(ra),pb=pct(rb); if(pb!==pa)return pb-pa; if(rb.pf!==ra.pf)return rb.pf-ra.pf; return ra.pa-rb.pa; }
 
-function initSeason() {
-  try { S = JSON.parse(localStorage.getItem('gridiron_season') || 'null'); } catch(e){ S=null; }
-  if (!S) {
-    var sched = generateSchedule();
-    S = {
-      week: 1,
-      schedule: sched,
-      results: sched.map(function(wk){
-        return wk.map(function(g){ return {away:g.away,home:g.home,awayScore:0,homeScore:0,winner:null,played:false}; });
-      })
-    };
-    saveSeason();
-  }
-  viewWeek = S.week;
-}
-
-function saveSeason() {
-  try { localStorage.setItem('gridiron_season', JSON.stringify(S)); } catch(e){}
-}
-
-// ── Records Computation ────────────────────────────────────────
-function computeRecords() {
-  var records = {};
-  TEAMS.forEach(function(t){ records[t.abbr]={w:0,l:0,tie:0,pf:0,pa:0,dw:0,dl:0}; });
-  S.results.forEach(function(wk, wi){
-    wk.forEach(function(g){
-      if (!g.played) return;
-      var ra=records[g.away], rh=records[g.home];
-      if (!ra||!rh) return;
-      ra.pf+=g.awayScore; ra.pa+=g.homeScore;
-      rh.pf+=g.homeScore; rh.pa+=g.awayScore;
-      // division?
-      var ta=TEAM_MAP[g.away], th=TEAM_MAP[g.home];
-      var isDiv = ta&&th&&ta.conf===th.conf&&ta.div===th.div;
-      if (g.winner==='away')      { ra.w++;ra.l==ra.l; rh.l++; if(isDiv){ra.dw++;rh.dl++;} }
-      else if (g.winner==='home') { rh.w++;ra.l++;      if(isDiv){rh.dw++;ra.dl++;} }
-      else                        { ra.tie++;rh.tie++;  }
-    });
+function computeRecords(games){
+  var records={};
+  TEAMS.forEach(function(t){records[t.abbr]={w:0,l:0,tie:0,pf:0,pa:0};});
+  games.forEach(function(g){
+    if(g.status!=='final')return;
+    var ra=records[g.away_abbr],rh=records[g.home_abbr];
+    if(!ra||!rh)return;
+    ra.pf+=g.away_score;ra.pa+=g.home_score;
+    rh.pf+=g.home_score;rh.pa+=g.away_score;
+    if(g.winner==='away'){ra.w++;rh.l++;}
+    else if(g.winner==='home'){rh.w++;ra.l++;}
+    else{ra.tie++;rh.tie++;}
   });
   return records;
 }
 
-function pct(r) {
-  var g=r.w+r.l+r.tie; return g?r.w/g:0;
-}
-function pctStr(r) {
-  var g=r.w+r.l+r.tie;
-  if(!g) return '—';
-  return (r.w/g).toFixed(3).replace(/^0/,'');
-}
-function recStr(r) { return r.w+'-'+r.l+(r.tie?'-'+r.tie:''); }
-
-function cmpTeam(a,b,records) {
-  var ra=records[a.abbr],rb=records[b.abbr];
-  var pa=pct(ra),pb=pct(rb);
-  if(pb!==pa) return pb-pa;
-  if(rb.pf!==ra.pf) return rb.pf-ra.pf;
-  return ra.pa-rb.pa;
+function getPlayoffSeeds(conf,records){
+  var ct=TEAMS.filter(function(t){return t.conf===conf;});
+  var dw=['East','North','South','West'].map(function(div){ var dt=ct.filter(function(t){return t.div===div;}); dt.sort(function(a,b){return cmpTeam(a,b,records);}); return dt[0]; });
+  dw.sort(function(a,b){return cmpTeam(a,b,records);});
+  var wm={}; dw.forEach(function(t){wm[t.abbr]=true;});
+  var nw=ct.filter(function(t){return !wm[t.abbr];}); nw.sort(function(a,b){return cmpTeam(a,b,records);});
+  return dw.concat(nw.slice(0,3));
 }
 
-// ── Playoff Seeding ────────────────────────────────────────────
-function getPlayoffSeeds(conf, records) {
-  var confTeams = TEAMS.filter(function(t){return t.conf===conf;});
-  var divs = ['East','North','South','West'];
-  // Division winners
-  var divWinners = divs.map(function(div){
-    var dt = confTeams.filter(function(t){return t.div===div;});
-    dt.sort(function(a,b){return cmpTeam(a,b,records);});
-    return dt[0];
-  });
-  // Sort division winners by record
-  divWinners.sort(function(a,b){return cmpTeam(a,b,records);});
-  // Wildcards
-  var winnerAbbrs = {};
-  divWinners.forEach(function(t){winnerAbbrs[t.abbr]=true;});
-  var nonWinners = confTeams.filter(function(t){return !winnerAbbrs[t.abbr];});
-  nonWinners.sort(function(a,b){return cmpTeam(a,b,records);});
-  return divWinners.concat(nonWinners.slice(0,3));
+// ── Season Init ────────────────────────────────────────────────
+async function initSeason(){
+  // Check auth
+  var { data: { user } } = await sb.auth.getUser();
+  if(user){
+    var { data: prof } = await sb.from('profiles').select('team_abbr,display_name').eq('id',user.id).maybeSingle();
+    if(prof){ MY_TEAM=prof.team_abbr; }
+    var hdr=document.querySelector('header .nav-links');
+    if(hdr){
+      var signinLink = document.getElementById('signin-nav-link');
+      if(!signinLink){
+        var a=document.createElement('a');
+        a.id='signin-nav-link';
+        a.href='gridiron_auth.html';
+        a.style.color='#f0c830';
+        a.textContent=(prof?prof.display_name+' ('+prof.team_abbr+')':'My Account');
+        hdr.insertBefore(a, hdr.firstChild);
+      }
+    }
+  } else {
+    var hdr=document.querySelector('header .nav-links');
+    if(hdr){
+      var a=document.createElement('a');
+      a.href='gridiron_auth.html';
+      a.textContent='Sign In';
+      hdr.insertBefore(a, hdr.firstChild);
+    }
+  }
+
+  // Try to fetch existing season
+  var { data: existing } = await sb.from('seasons').select('*').eq('id',1).maybeSingle();
+  if(existing){ S=existing; }
+  else {
+    // Create season
+    var sched=generateSchedule();
+    var { error:insErr } = await sb.from('seasons').insert({id:1,week:1,schedule:sched});
+    if(insErr){
+      // Race condition — fetch existing
+      var { data: existing2 } = await sb.from('seasons').select('*').eq('id',1).single();
+      S=existing2;
+    } else {
+      S={id:1,week:1,schedule:sched};
+      // Bulk insert all 272 games
+      var gameRows=[];
+      sched.forEach(function(wk,wi){ wk.forEach(function(g){ gameRows.push({season_week:wi+1,away_abbr:g.away,home_abbr:g.home,away_score:0,home_score:0,quarter:1,secs:900,status:'scheduled',winner:null,updated_at:new Date().toISOString()}); }); });
+      // Insert in batches of 100
+      for(var i=0;i<gameRows.length;i+=100){ await sb.from('games').insert(gameRows.slice(i,i+100)); }
+    }
+  }
+
+  viewWeek=S.week;
+  await loadWeekGames();
+  subscribeRealtime();
+  renderAll();
 }
 
-// ── Background Simulation ──────────────────────────────────────
-var gameStates = {}; // abbr_abbr -> {awayScore,homeScore,quarter,secs,over}
+async function loadWeekGames(){
+  // Fetch ALL games (for standings across all weeks)
+  var { data: games } = await sb.from('games').select('*');
+  allGames = games || [];
+}
 
-function getGameKey(g) { return g.away+'_'+g.home; }
+// ── Real-time subscription ─────────────────────────────────────
+function subscribeRealtime(){
+  if(realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('games-realtime')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'games'},function(payload){
+      var updated=payload.new;
+      for(var i=0;i<allGames.length;i++){ if(allGames[i].id===updated.id){ allGames[i]=updated; break; } }
+      renderAll();
+    })
+    .subscribe();
+}
 
-function initGameStates() {
-  // Load any existing BUF result from localStorage
-  var bufResult = null;
+// ── Tick games (call Edge Function) ───────────────────────────
+async function tickGames(){
   try {
-    var hist = JSON.parse(localStorage.getItem('gridiron_results')||'[]');
-    if (hist.length) bufResult = hist[hist.length-1];
+    await fetch(SUPA_URL+'/functions/v1/tick-games',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'}
+    });
   } catch(e){}
-
-  var wk = S.schedule[viewWeek-1]||[];
-  wk.forEach(function(g,i){
-    var key = getGameKey(g);
-    var wkRes = S.results[viewWeek-1][i];
-    if (!gameStates[key]) {
-      if (wkRes.played) {
-        gameStates[key] = {awayScore:wkRes.awayScore,homeScore:wkRes.homeScore,quarter:4,secs:0,over:true};
-      } else if ((g.away==='BUF'||g.home==='BUF')&&bufResult&&bufResult.away===g.away&&bufResult.home===g.home) {
-        gameStates[key] = {awayScore:bufResult.awayScore,homeScore:bufResult.homeScore,quarter:4,secs:0,over:true};
-        // Mark played
-        wkRes.awayScore=bufResult.awayScore; wkRes.homeScore=bufResult.homeScore;
-        wkRes.winner=bufResult.winner; wkRes.played=true; saveSeason();
-      } else {
-        gameStates[key] = {awayScore:0,homeScore:0,quarter:1,secs:900,over:false};
-      }
-    }
-  });
-}
-
-function isBUFGame(g) { return g.away==='BUF'||g.home==='BUF'; }
-
-function tickGames() {
-  var wk = S.schedule[viewWeek-1]||[];
-  var anyChange = false;
-  wk.forEach(function(g,i){
-    var key = getGameKey(g);
-    var gs = gameStates[key];
-    if (!gs||gs.over||isBUFGame(g)) return;
-    // Check BUF result
-    if (isBUFGame(g)) return;
-    var burn = 55+Math.floor(Math.random()*70);
-    gs.secs = Math.max(0, gs.secs-burn);
-    var r = Math.random();
-    if      (r<0.045) { var pts=Math.random()>0.06?7:6; Math.random()<0.5?gs.awayScore+=pts:gs.homeScore+=pts; }
-    else if (r<0.065) { Math.random()<0.5?gs.awayScore+=3:gs.homeScore+=3; }
-    else if (r<0.068) { Math.random()<0.5?gs.awayScore+=2:gs.homeScore+=2; }
-    if (gs.secs<=0) {
-      gs.quarter++;
-      gs.secs=900;
-      if (gs.quarter>4) {
-        gs.quarter=4; gs.secs=0; gs.over=true;
-        var wkRes=S.results[viewWeek-1][i];
-        wkRes.awayScore=gs.awayScore; wkRes.homeScore=gs.homeScore;
-        wkRes.winner=gs.awayScore>gs.homeScore?'away':gs.homeScore>gs.awayScore?'home':'tie';
-        wkRes.played=true; anyChange=true;
-      }
-    }
-  });
-  // Check if BUF game result came in from localStorage
-  wk.forEach(function(g,i){
-    if (!isBUFGame(g)) return;
-    var key=getGameKey(g);
-    var gs=gameStates[key];
-    if (gs.over) return;
-    try {
-      var hist=JSON.parse(localStorage.getItem('gridiron_results')||'[]');
-      hist.forEach(function(r){
-        if(r.away===g.away&&r.home===g.home&&!gs.over){
-          gs.awayScore=r.awayScore; gs.homeScore=r.homeScore; gs.over=true; gs.quarter=4; gs.secs=0;
-          var wkRes=S.results[viewWeek-1][i];
-          if(!wkRes.played){
-            wkRes.awayScore=r.awayScore; wkRes.homeScore=r.homeScore;
-            wkRes.winner=r.winner; wkRes.played=true; anyChange=true;
-          }
-        }
-      });
-    } catch(e){}
-  });
-  if (anyChange) saveSeason();
 }
 
 // ── Render ─────────────────────────────────────────────────────
-function fmt(s){var m=Math.floor(s/60),sec=s%60;return m+':'+(sec<10?'0':'')+sec;}
-
-function renderAll() {
-  var records = computeRecords();
+function renderAll(){
+  var records=computeRecords(allGames);
   renderHeader();
   renderGames(records);
   renderStandings(records);
@@ -428,80 +334,65 @@ function renderAll() {
   renderWeekNav();
 }
 
-function renderHeader() {
+function renderHeader(){
   document.getElementById('hdr-sub').textContent='SEASON 1 \u00b7 WEEK '+S.week;
   document.getElementById('wn-label').textContent='WEEK '+viewWeek;
   document.getElementById('scoreboard-hdr').textContent='Week '+viewWeek+' \u00b7 Scoreboard';
 }
 
-function renderWeekNav() {
-  document.getElementById('btn-prev').disabled = (viewWeek<=1);
-  document.getElementById('btn-next').disabled = (viewWeek>=17);
-  // Show advance button only if viewing current week and it's fully done
-  var curWkRes = S.results[S.week-1]||[];
-  var allDone = curWkRes.every(function(g){return g.played;});
-  var advBtn = document.getElementById('adv-btn');
-  if (viewWeek===S.week && allDone && S.week<17) {
-    advBtn.classList.add('show');
-  } else {
-    advBtn.classList.remove('show');
-  }
+function renderWeekNav(){
+  document.getElementById('btn-prev').disabled=(viewWeek<=1);
+  document.getElementById('btn-next').disabled=(viewWeek>=17);
+  var curWkGames=allGames.filter(function(g){return g.season_week===S.week;});
+  var allDone=curWkGames.length>0&&curWkGames.every(function(g){return g.status==='final';});
+  var advBtn=document.getElementById('adv-btn');
+  if(viewWeek===S.week&&allDone&&S.week<17) advBtn.classList.add('show');
+  else advBtn.classList.remove('show');
 }
 
-function renderGames(records) {
-  var grid = document.getElementById('games-grid');
-  var wk = S.schedule[viewWeek-1]||[];
-  var wkRes = S.results[viewWeek-1]||[];
+function renderGames(records){
+  var grid=document.getElementById('games-grid');
+  var wkGames=allGames.filter(function(g){return g.season_week===viewWeek;});
+  // Sort by away_abbr to maintain consistent order
+  wkGames.sort(function(a,b){return a.away_abbr<b.away_abbr?-1:1;});
   grid.innerHTML='';
-  wk.forEach(function(g,i){
-    var key=getGameKey(g);
-    var gs=gameStates[key];
-    var res=wkRes[i];
-    var isBuf=isBUFGame(g);
-    var isActive=viewWeek===S.week;
-    var awayScore=gs?gs.awayScore:res.awayScore;
-    var homeScore=gs?gs.homeScore:res.homeScore;
-    var over=gs?gs.over:res.played;
-    var quarter=gs?gs.quarter:4;
-    var secs=gs?gs.secs:0;
-    var awayWin=over&&awayScore>homeScore;
-    var homeWin=over&&homeScore>awayScore;
+  wkGames.forEach(function(g){
+    var isBuf=g.away_abbr==='BUF'||g.home_abbr==='BUF';
+    var isViewingCurrent=viewWeek===S.week;
+    var over=g.status==='final';
+    var awayWin=over&&g.away_score>g.home_score;
+    var homeWin=over&&g.home_score>g.away_score;
+    var myTeam=MY_TEAM&&(g.away_abbr===MY_TEAM||g.home_abbr===MY_TEAM);
 
     var statusHtml;
-    if (over) {
-      statusHtml='<span class="gt-status final">Final</span>';
-    } else if (isBuf && isActive) {
-      statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Live</span>';
-    } else if (!isBuf && isActive) {
-      statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Q'+quarter+' &middot; '+fmt(secs)+'</span>';
-    } else {
-      statusHtml='<span class="gt-status">Scheduled</span>';
-    }
+    if(over) statusHtml='<span class="gt-status final">Final</span>';
+    else if(isBuf&&isViewingCurrent) statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Live</span>';
+    else if(isViewingCurrent&&g.status==='live') statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Q'+g.quarter+' &middot; '+fmt(g.secs)+'</span>';
+    else statusHtml='<span class="gt-status">'+(isViewingCurrent?'Scheduled':'Week '+viewWeek)+'</span>';
 
-    var playLink = (isBuf && isActive && !over) ? '<a class="gt-play-link" href="gridiron_game.html">PLAY NOW &rarr;</a>' : '';
-    if (over && isBuf) playLink = '<a class="gt-play-link" style="background:#333;color:#888" href="gridiron_game.html">REPLAY</a>';
+    var playLink=(isBuf&&isViewingCurrent&&!over)?'<a class="gt-play-link" href="gridiron_game.html">PLAY NOW &rarr;</a>':'';
 
     var tile=document.createElement('div');
-    tile.className='game-tile'+(isBuf?' is-active':'')+(over?' is-over':'');
-    tile.onclick=function(){ window.location='gridiron_team.html?team='+g.away; };
+    tile.className='game-tile'+(isBuf||myTeam?' is-active':'')+(over?' is-over':'');
     tile.innerHTML=
       '<div class="gt-teams">'+
-        '<div class="gt-row'+(awayWin?' winner':'')+'"><span class="gt-abbr">'+g.away+'</span><span class="gt-score">'+awayScore+'</span></div>'+
-        '<div class="gt-row'+(homeWin?' winner':'')+'"><span class="gt-abbr">'+g.home+'</span><span class="gt-score">'+homeScore+'</span></div>'+
+        '<div class="gt-row'+(awayWin?' winner':'')+'"><span class="gt-abbr">'+g.away_abbr+'</span><span class="gt-score">'+g.away_score+'</span></div>'+
+        '<div class="gt-row'+(homeWin?' winner':'')+'"><span class="gt-abbr">'+g.home_abbr+'</span><span class="gt-score">'+g.home_score+'</span></div>'+
       '</div>'+
       '<div class="gt-meta">'+statusHtml+playLink+'</div>';
+    tile.style.cursor='pointer';
+    tile.onclick=(function(abbr){ return function(){ window.location='gridiron_team.html?team='+abbr; }; })(g.away_abbr);
     grid.appendChild(tile);
   });
 }
 
-function renderStandings(records) {
-  var grid = document.getElementById('standings-grid');
+function renderStandings(records){
+  var grid=document.getElementById('standings-grid');
   grid.innerHTML='';
   ['AFG','NFG'].forEach(function(conf){
-    var seeds = getPlayoffSeeds(conf, records);
+    var seeds=getPlayoffSeeds(conf,records);
     var seedMap={};
     seeds.forEach(function(t,i){seedMap[t.abbr]=i+1;});
-
     var confDiv=document.createElement('div');
     confDiv.innerHTML='<div class="conf-title">'+conf+' Conference</div>';
     ['East','North','South','West'].forEach(function(div){
@@ -509,7 +400,7 @@ function renderStandings(records) {
       divTeams.sort(function(a,b){return cmpTeam(a,b,records);});
       var rows=divTeams.map(function(t){
         var r=records[t.abbr];
-        var isMine=t.abbr==='BUF';
+        var isMine=MY_TEAM?t.abbr===MY_TEAM:t.abbr==='BUF';
         var seed=seedMap[t.abbr]?'<span style="color:'+(seedMap[t.abbr]<=4?'#f0c830':'#888')+'">'+seedMap[t.abbr]+'</span>':'';
         return '<tr class="'+(isMine?'my-team':'')+'">'+
           '<td class="seed-badge">'+seed+'</td>'+
@@ -518,8 +409,7 @@ function renderStandings(records) {
           '<td class="pct">'+pctStr(r)+'</td>'+
           '<td class="pf">'+r.pf+'</td><td class="pa">'+r.pa+'</td></tr>';
       }).join('');
-      confDiv.innerHTML+=
-        '<div class="div-block"><div class="div-title">'+conf+' '+div+'</div>'+
+      confDiv.innerHTML+='<div class="div-block"><div class="div-title">'+conf+' '+div+'</div>'+
         '<table class="std-tbl"><thead><tr><th></th><th>Team</th><th>W</th><th>L</th><th>T</th><th>PCT</th><th>PF</th><th>PA</th></tr></thead>'+
         '<tbody>'+rows+'</tbody></table></div>';
     });
@@ -527,118 +417,82 @@ function renderStandings(records) {
   });
 }
 
-function renderBracket(records) {
-  var wrap = document.getElementById('bracket-wrap');
+function renderBracket(records){
+  var wrap=document.getElementById('bracket-wrap');
   wrap.innerHTML='';
   ['AFG','NFG'].forEach(function(conf){
-    var seeds = getPlayoffSeeds(conf, records);
-    var block = document.createElement('div');
+    var seeds=getPlayoffSeeds(conf,records);
+    var block=document.createElement('div');
     block.className='bracket-conf';
     var html='<div class="bracket-conf-title">'+conf+' Playoff Picture</div>';
-
-    // Show current seedings (seeds 1-7)
-    html+='<div class="bracket-round-label">Current Seeds</div>';
-
-    // Seed 1 + bye
-    var s1=seeds[0];
-    var r1=records[s1.abbr];
-    html+='<div class="bracket-bye">&#9655; #1 '+s1.abbr+' — BYE ('+recStr(r1)+')</div>';
-
-    // Wild Card matchups: 2v7, 3v6, 4v5
+    var s1=seeds[0]; var r1=records[s1.abbr];
+    html+='<div class="bracket-bye">&#9655; #1 '+s1.abbr+' \u2014 BYE ('+recStr(r1)+')</div>';
     [[1,6],[2,5],[3,4]].forEach(function(pair){
-      var sa=seeds[pair[0]],sb=seeds[pair[1]];
-      if(!sa||!sb) return;
-      var ra=records[sa.abbr],rb=records[sb.abbr];
-      var amI_a=sa.abbr==='BUF',amI_b=sb.abbr==='BUF';
+      var sa=seeds[pair[0]],sb2=seeds[pair[1]];
+      if(!sa||!sb2)return;
+      var ra=records[sa.abbr],rb=records[sb2.abbr];
+      var amI_a=MY_TEAM?sa.abbr===MY_TEAM:sa.abbr==='BUF';
+      var amI_b=MY_TEAM?sb2.abbr===MY_TEAM:sb2.abbr==='BUF';
       html+='<div class="bracket-matchup">'+
         '<div class="bm-row"><span class="bm-num">'+(pair[0]+1)+'</span><span class="bm-name'+(amI_a?' my-team':'')+'">'+sa.city+' '+sa.name+'</span><span class="bm-rec">'+recStr(ra)+'</span></div>'+
         '<div class="bm-vs">vs</div>'+
-        '<div class="bm-row"><span class="bm-num">'+(pair[1]+1)+'</span><span class="bm-name'+(amI_b?' my-team':'')+'">'+sb.city+' '+sb.name+'</span><span class="bm-rec">'+recStr(rb)+'</span></div>'+
+        '<div class="bm-row"><span class="bm-num">'+(pair[1]+1)+'</span><span class="bm-name'+(amI_b?' my-team':'')+'">'+sb2.city+' '+sb2.name+'</span><span class="bm-rec">'+recStr(rb)+'</span></div>'+
         '</div>';
     });
-
-    // Next bubble (first out)
-    var bubble=seeds[7];
-    if(bubble){
-      var rb2=records[bubble.abbr];
-      html+='<div style="margin-top:8px;font-size:9px;color:#444;letter-spacing:1px;font-weight:700;">FIRST OUT: '+bubble.abbr+' ('+recStr(rb2)+')</div>';
-    }
-
+    if(seeds[7]){ var rb2=records[seeds[7].abbr]; html+='<div style="margin-top:8px;font-size:9px;color:#444;letter-spacing:1px;font-weight:700;">FIRST OUT: '+seeds[7].abbr+' ('+recStr(rb2)+')</div>'; }
     block.innerHTML=html;
     wrap.appendChild(block);
   });
 }
 
-// ── Week navigation ────────────────────────────────────────────
-function changeWeek(delta) {
-  var nw = viewWeek+delta;
-  if (nw<1||nw>17) return;
-  viewWeek=nw;
-  initGameStates();
-  renderAll();
-}
+// ── Week nav ───────────────────────────────────────────────────
+function changeWeek(delta){ var nw=viewWeek+delta; if(nw<1||nw>17)return; viewWeek=nw; renderAll(); }
 
-function advanceWeek() {
-  if (S.week>=17) return;
+async function advanceWeek(){
+  if(S.week>=17)return;
   S.week++;
+  await sb.from('seasons').update({week:S.week}).eq('id',1);
   viewWeek=S.week;
-  saveSeason();
-  initGameStates();
   renderAll();
 }
 
 // ── Dev ────────────────────────────────────────────────────────
 function devToggle(){ document.getElementById('dev-panel').classList.toggle('open'); }
 
-function devSimWeek() {
-  var wk=S.schedule[S.week-1]||[];
-  wk.forEach(function(g,i){
-    if(isBUFGame(g)) return;
-    var key=getGameKey(g);
-    var gs=gameStates[key];
-    if(!gs||gs.over) return;
-    while(!gs.over){
-      var burn=55+Math.floor(Math.random()*70);
-      gs.secs=Math.max(0,gs.secs-burn);
+async function devSimWeek(){
+  var wkGames=allGames.filter(function(g){return g.season_week===S.week&&g.status!=='final'&&g.away_abbr!=='BUF'&&g.home_abbr!=='BUF';});
+  for(var i=0;i<wkGames.length;i++){
+    var g=wkGames[i];
+    var as=g.away_score,hs=g.home_score,q=g.quarter,secs=g.secs;
+    while(true){
+      var burn=55+Math.floor(Math.random()*70); secs=Math.max(0,secs-burn);
       var r=Math.random();
-      if(r<0.045){var pts=Math.random()>0.06?7:6;Math.random()<0.5?gs.awayScore+=pts:gs.homeScore+=pts;}
-      else if(r<0.065){Math.random()<0.5?gs.awayScore+=3:gs.homeScore+=3;}
-      if(gs.secs<=0){gs.quarter++;gs.secs=900;if(gs.quarter>4){gs.quarter=4;gs.secs=0;gs.over=true;}}
+      if(r<0.045){var pts=Math.random()>0.06?7:6;Math.random()<0.5?as+=pts:hs+=pts;}
+      else if(r<0.065){Math.random()<0.5?as+=3:hs+=3;}
+      if(secs<=0){q++;secs=900;if(q>4){q=4;secs=0;break;}}
     }
-    var res=S.results[S.week-1][i];
-    res.awayScore=gs.awayScore;res.homeScore=gs.homeScore;
-    res.winner=gs.awayScore>gs.homeScore?'away':gs.homeScore>gs.awayScore?'home':'tie';
-    res.played=true;
-  });
-  saveSeason();
+    var w=as>hs?'away':hs>as?'home':'tie';
+    await sb.from('games').update({away_score:as,home_score:hs,quarter:q,secs:0,status:'final',winner:w,updated_at:new Date().toISOString()}).eq('id',g.id);
+  }
+  await loadWeekGames();
   renderAll();
 }
 
-function devNextWeek() {
-  devSimWeek();
-  if(S.week<17){S.week++;viewWeek=S.week;saveSeason();initGameStates();}
-  renderAll();
-}
+async function devNextWeek(){ await devSimWeek(); if(S.week<17){ S.week++; await sb.from('seasons').update({week:S.week}).eq('id',1); viewWeek=S.week; } await loadWeekGames(); renderAll(); }
 
-function devResetSeason() {
-  localStorage.removeItem('gridiron_season');
-  localStorage.removeItem('gridiron_player_stats');
-  localStorage.removeItem('gridiron_results');
+async function devResetSeason(){
+  await sb.from('games').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('seasons').delete().eq('id',1);
+  await sb.from('player_stats').delete().neq('id','00000000-0000-0000-0000-000000000000');
   location.reload();
 }
 
-document.addEventListener('keydown',function(e){if(e.key==='`'||e.key==='~') devToggle();});
+document.addEventListener('keydown',function(e){if(e.key==='`'||e.key==='~')devToggle();});
 
-// ── Init ───────────────────────────────────────────────────────
+// ── Boot ───────────────────────────────────────────────────────
 initSeason();
-initGameStates();
-renderAll();
-
-setInterval(function(){
-  if(viewWeek!==S.week) return;
-  tickGames();
-  renderAll();
-},1200);
+// Call tick function every 5 seconds (client-driven until cron is set up)
+setInterval(tickGames, 5000);
 </script>
 </body>
 </html>
