@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Gridiron - Standings</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #080808;
+      color: #f5f5f5;
+      line-height: 1.4;
+    }
+    
+    a {
+      color: #f0c830;
+      text-decoration: none;
+    }
+    
+    a:hover {
+      opacity: 0.8;
+    }
+
+    /* Header */
+    .header {
+      background: #0d0b00;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 16px 24px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #f0c830;
+      cursor: pointer;
+    }
+
+    .nav-center {
+      display: flex;
+      gap: 32px;
+      flex: 1;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .nav-center a {
+      color: #aaa;
+      transition: color 0.2s;
+    }
+
+    .nav-center a.active {
+      color: #f0c830;
+    }
+
+    .nav-center a:hover {
+      color: #f0c830;
+    }
+
+    .nav-right {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Season Header */
+    .season-header {
+      text-align: center;
+      padding: 32px 20px;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    /* Main Content */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .score-tile {
+      background: #0d0b00;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .score-tile .away-team {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .score-tile .scores {
+      font-size: 24px;
+      font-weight: 700;
+      color: #f0c830;
+      margin-bottom: 8px;
+    }
+
+    .score-tile .home-team {
+      font-size: 13px;
+      color: #999;
+    }
+
+    .division {
+      margin-bottom: 40px;
+    }
+
+    .division-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      color: #f0c830;
+    }
+
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #0d0b00;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .standings-table th {
+      background: #0a0a0a;
+      padding: 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .standings-table td {
+      padding: 12px;
+      border-bottom: 1px solid #1a1a1a;
+      font-size: 12px;
+    }
+
+    .standings-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .standings-table .team-col {
+      font-weight: 600;
+    }
+
+    .standings-table .num-col {
+      text-align: center;
+      color: #999;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff00;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <a href="gridiron_season.html" class="logo">THE GRIDIRON</a>
+      <div class="nav-center">
+        <a href="gridiron_season.html">LEAGUE</a>
+        <a href="gridiron_standings.html" class="active">STANDINGS</a>
+        <a href="gridiron_stats.html">STATS</a>
+        <a href="gridiron_draft.html">DRAFT</a>
+      </div>
+      <div class="nav-right">
+        <span id="auth-display">Sign In</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Season Header -->
+  <div class="season-header" id="season-header">SEASON 1 · DAY 1</div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Scoreboard -->
+    <h2 style="margin-bottom: 20px; letter-spacing: 1px; font-size: 14px;">TODAY'S SCORES</h2>
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <!-- AFG Standings -->
+    <div class="division">
+      <div class="division-title">AFG CONFERENCE</div>
+      <table class="standings-table" id="afg-table"></table>
+    </div>
+
+    <!-- NFG Standings -->
+    <div class="division">
+      <div class="division-title">NFG CONFERENCE</div>
+      <table class="standings-table" id="nfg-table"></table>
+    </div>
+  </div>
+
+  <script>
+    const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+    const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
+
+    const TEAMS = {
+      BUF: {name: 'Buffalo Almanacs', conf: 'AFG'},
+      MIA: {name: 'Miami Flamingos', conf: 'AFG'},
+      NWE: {name: 'New England Puritans', conf: 'AFG'},
+      NYP: {name: 'New York Pigeons', conf: 'AFG'},
+      PIT: {name: 'Pittsburgh Casseroles', conf: 'AFG'},
+      BAL: {name: 'Baltimore Tugboats', conf: 'AFG'},
+      CLE: {name: 'Cleveland Geology', conf: 'AFG'},
+      CIN: {name: 'Cincinnati Spoons', conf: 'AFG'},
+      TEN: {name: 'Tennessee Vowels', conf: 'AFG'},
+      IND: {name: 'Indianapolis Speedway', conf: 'AFG'},
+      HOU: {name: 'Houston Humidity', conf: 'AFG'},
+      JAX: {name: 'Jacksonville Mullets', conf: 'AFG'},
+      KCY: {name: 'Kansas City Middlemen', conf: 'AFG'},
+      LVG: {name: 'Las Vegas The House', conf: 'AFG'},
+      DEN: {name: 'Denver Prospectors', conf: 'AFG'},
+      LAP: {name: 'Los Angeles Smog', conf: 'AFG'},
+      PHI: {name: 'Philadelphia Mummers', conf: 'NFG'},
+      DAL: {name: 'Dallas Tycoons', conf: 'NFG'},
+      NYA: {name: 'New York Gargoyles', conf: 'NFG'},
+      WAS: {name: 'Washington Monuments', conf: 'NFG'},
+      CHI: {name: 'Chicago Gusts', conf: 'NFG'},
+      GBP: {name: 'Green Bay Curds', conf: 'NFG'},
+      MIN: {name: 'Minnesota Loons', conf: 'NFG'},
+      DET: {name: 'Detroit Potholes', conf: 'NFG'},
+      NOS: {name: 'New Orleans Gumbo', conf: 'NFG'},
+      CAR: {name: 'Carolina Sweet Tea', conf: 'NFG'},
+      ATL: {name: 'Atlanta Offramps', conf: 'NFG'},
+      TAM: {name: 'Tampa Bay Manatees', conf: 'NFG'},
+      SFO: {name: 'San Francisco Fog', conf: 'NFG'},
+      SEA: {name: 'Seattle Drizzle', conf: 'NFG'},
+      LAM: {name: 'Los Angeles Billboards', conf: 'NFG'},
+      ARI: {name: 'Arizona Mirage', conf: 'NFG'},
+    };
+
+    let supabase;
+    let currentSeason = null;
+    let allGames = [];
+
+    async function init() {
+      supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+      
+      // Check auth
+      const {data: {user}} = await supabase.auth.getUser();
+      if (user) {
+        document.getElementById('auth-display').textContent = user.email;
+      } else {
+        document.getElementById('auth-display').innerHTML = '<a href="gridiron_auth.html">Sign In</a>';
+      }
+
+      // Fetch season
+      let {data: seasonData} = await supabase.from('seasons').select('*').eq('id', 1);
+      currentSeason = seasonData[0];
+      document.getElementById('season-header').textContent = `SEASON ${currentSeason.season_num} · DAY ${currentSeason.week}`;
+
+      // Fetch all games for current day
+      let {data: games} = await supabase.from('games').select('*').eq('season_week', currentSeason.week);
+      allGames = games || [];
+
+      // Subscribe to updates
+      supabase.channel('games-updates').on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games'}, (payload) => {
+        const idx = allGames.findIndex(g => g.id === payload.new.id);
+        if (idx >= 0) {
+          allGames[idx] = payload.new;
+          render();
+        }
+      }).subscribe();
+
+      render();
+    }
+
+    function render() {
+      renderScoreboard();
+      renderStandings('AFG');
+      renderStandings('NFG');
+    }
+
+    function renderScoreboard() {
+      const html = allGames.map(g => `
+        <div class="score-tile">
+          <div class="away-team">${g.away_abbr}</div>
+          <div class="scores">${g.away_score} - ${g.home_score}</div>
+          <div class="home-team">${g.home_abbr}</div>
+        </div>
+      `).join('');
+      document.getElementById('scoreboard').innerHTML = html;
+    }
+
+    function renderStandings(conf) {
+      const teamAbbrs = Object.keys(TEAMS).filter(a => TEAMS[a].conf === conf);
+      
+      // Calculate records for each team
+      const records = {};
+      teamAbbrs.forEach(abbr => {
+        let wins = 0, losses = 0;
+        allGames.forEach(g => {
+          if (g.away_abbr === abbr) {
+            if (g.away_score > g.home_score) wins++;
+            else losses++;
+          } else if (g.home_abbr === abbr) {
+            if (g.home_score > g.away_score) wins++;
+            else losses++;
+          }
+        });
+        records[abbr] = {wins, losses};
+      });
+
+      // Sort by wins
+      const sorted = teamAbbrs.sort((a, b) => records[b].wins - records[a].wins);
+
+      let html = `
+        <tr>
+          <th>TEAM</th>
+          <th class="num-col">W</th>
+          <th class="num-col">L</th>
+          <th class="num-col">GB</th>
+        </tr>
+      `;
+
+      sorted.forEach((abbr, idx) => {
+        const {wins, losses} = records[abbr];
+        const gb = idx === 0 ? '-' : ((records[sorted[0]].wins - wins) || '-');
+        html += `
+          <tr>
+            <td class="team-col">${abbr} ${TEAMS[abbr].name}</td>
+            <td class="num-col">${wins}</td>
+            <td class="num-col">${losses}</td>
+            <td class="num-col">${gb}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById(conf.toLowerCase() + '-table').innerHTML = html;
+    }
+
+    init();
+  </script>
+</body>
+</html>

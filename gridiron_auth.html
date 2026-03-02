@@ -2,116 +2,418 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>The Gridiron | Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Gridiron - Sign In</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#080808; color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
-    .card { background:#111; border:1px solid #1e1e1e; border-radius:3px; padding:32px; width:100%; max-width:400px; }
-    .logo { font-size:16px; letter-spacing:4px; font-weight:900; text-transform:uppercase; color:#f0c830; margin-bottom:6px; }
-    .tagline { font-size:11px; color:#444; letter-spacing:1px; margin-bottom:28px; }
-    .tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:1px solid #1e1e1e; }
-    .tab { padding:8px 18px; font-size:11px; font-weight:700; letter-spacing:1px; color:#444; cursor:pointer; text-transform:uppercase; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
-    .tab.active { color:#f0c830; border-bottom-color:#f0c830; }
-    .field { margin-bottom:14px; }
-    label { display:block; font-size:9px; font-weight:700; letter-spacing:1px; color:#555; text-transform:uppercase; margin-bottom:5px; }
-    input, select { width:100%; background:#0a0a0a; border:1px solid #222; border-radius:2px; padding:9px 10px; color:#fff; font-size:12px; font-family:inherit; outline:none; transition:border-color .15s; }
-    input:focus, select:focus { border-color:#555; }
-    select option { background:#111; }
-    .btn { width:100%; padding:11px; background:#f0c830; color:#000; border:none; border-radius:2px; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; font-family:inherit; transition:background .12s; margin-top:6px; }
-    .btn:hover { background:#ffe566; }
-    .btn:disabled { background:#333; color:#666; cursor:not-allowed; }
-    .msg { margin-top:14px; font-size:11px; text-align:center; min-height:16px; }
-    .msg.err { color:#e06060; }
-    .msg.ok { color:#3db86a; }
-    .back { display:block; text-align:center; margin-top:20px; font-size:10px; color:#444; text-decoration:none; letter-spacing:1px; }
-    .back:hover { color:#f0c830; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #080808;
+      color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 450px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo-text {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #f0c830;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: #666;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .tab {
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab.active {
+      color: #f0c830;
+      border-bottom-color: #f0c830;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      color: #ccc;
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: #0d0b00;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      color: #f5f5f5;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #f0c830;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #f0c830;
+      border: none;
+      color: #080808;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn:hover {
+      background: #e0b820;
+    }
+
+    .btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .error {
+      color: #ff6666;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .success {
+      color: #66ff66;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    /* Team picker */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .team-box {
+      aspect-ratio: 1;
+      background: #111;
+      border: 2px solid #222;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .team-box:hover {
+      transform: scale(1.05);
+    }
+
+    .team-box.selected {
+      border-color: #f0c830;
+      box-shadow: 0 0 12px rgba(240, 200, 48, 0.3);
+    }
+
+    .team-abbr {
+      font-size: 18px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 9px;
+      color: #666;
+      text-align: center;
+    }
+
+    .team-box.selected .team-name {
+      color: #aaa;
+    }
+
+    .back-link {
+      text-align: center;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+
+    .back-link a {
+      color: #f0c830;
+      cursor: pointer;
+    }
+
+    .step-indicator {
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">The Gridiron</div>
-  <div class="tagline">SEASON 1 — PICK YOUR TEAM</div>
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('signin')">Sign In</div>
-    <div class="tab" onclick="switchTab('signup')">Create Account</div>
-  </div>
-
-  <!-- Sign In -->
-  <div id="form-signin">
-    <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com"></div>
-    <div class="field"><label>Password</label><input type="password" id="si-pass" placeholder="••••••••"></div>
-    <button class="btn" onclick="doSignIn()">Sign In</button>
-    <div class="msg" id="si-msg"></div>
-  </div>
-
-  <!-- Sign Up -->
-  <div id="form-signup" style="display:none">
-    <div class="field"><label>Display Name</label><input type="text" id="su-name" placeholder="Your name"></div>
-    <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com"></div>
-    <div class="field"><label>Password</label><input type="password" id="su-pass" placeholder="at least 6 characters"></div>
-    <div class="field">
-      <label>Your Team</label>
-      <select id="su-team">
-        <optgroup label="AFG East"><option value="BUF">Buffalo Almanacs</option><option value="MIA">Miami Flamingos</option><option value="NWE">New England Puritans</option><option value="NYP">New York Pigeons</option></optgroup>
-        <optgroup label="AFG North"><option value="PIT">Pittsburgh Casseroles</option><option value="BAL">Baltimore Tugboats</option><option value="CLE">Cleveland Geology</option><option value="CIN">Cincinnati Spoons</option></optgroup>
-        <optgroup label="AFG South"><option value="TEN">Tennessee Vowels</option><option value="IND">Indianapolis Speedway</option><option value="HOU">Houston Humidity</option><option value="JAX">Jacksonville Mullets</option></optgroup>
-        <optgroup label="AFG West"><option value="KCY">Kansas City Middlemen</option><option value="LVG">Las Vegas The House</option><option value="DEN">Denver Prospectors</option><option value="LAP">Los Angeles Smog</option></optgroup>
-        <optgroup label="NFG East"><option value="PHI">Philadelphia Mummers</option><option value="DAL">Dallas Tycoons</option><option value="NYA">New York Gargoyles</option><option value="WAS">Washington Monuments</option></optgroup>
-        <optgroup label="NFG North"><option value="CHI">Chicago Gusts</option><option value="GBP">Green Bay Curds</option><option value="MIN">Minnesota Loons</option><option value="DET">Detroit Potholes</option></optgroup>
-        <optgroup label="NFG South"><option value="NOS">New Orleans Gumbo</option><option value="CAR">Carolina Sweet Tea</option><option value="ATL">Atlanta Offramps</option><option value="TAM">Tampa Bay Manatees</option></optgroup>
-        <optgroup label="NFG West"><option value="SFO">San Francisco Fog</option><option value="SEA">Seattle Drizzle</option><option value="LAM">Los Angeles Billboards</option><option value="ARI">Arizona Mirage</option></optgroup>
-      </select>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-text">THE GRIDIRON</div>
+      <div class="subtitle" id="subtitle">WELCOME BACK</div>
     </div>
-    <button class="btn" onclick="doSignUp()">Create Account</button>
-    <div class="msg" id="su-msg"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('signin')">SIGN IN</button>
+      <button class="tab" onclick="switchTab('signup')">CREATE ACCOUNT</button>
+    </div>
+
+    <!-- Sign In Tab -->
+    <div id="signin" class="tab-content active">
+      <form onsubmit="handleSignIn(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="signin-email" required placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signin-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn">SIGN IN</button>
+        <div id="signin-error" class="error"></div>
+      </form>
+    </div>
+
+    <!-- Sign Up Tab -->
+    <div id="signup" class="tab-content">
+      <div id="signup-step1">
+        <div class="step-indicator">STEP 1: JOIN THE LEAGUE</div>
+        <form onsubmit="handleSignUpStep1(event)">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" id="signup-name" required placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" required placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn">CONTINUE →</button>
+          <div id="signup-error" class="error"></div>
+        </form>
+      </div>
+
+      <div id="signup-step2" style="display:none;">
+        <div class="back-link"><a onclick="signupBackToStep1()">← BACK</a></div>
+        <div class="step-indicator">STEP 2: PICK YOUR TEAM</div>
+        <div class="team-grid" id="team-grid"></div>
+        <button class="btn" id="create-btn" disabled onclick="handleSignUpStep2()">CREATE ACCOUNT</button>
+        <div id="signup-error2" class="error"></div>
+      </div>
+    </div>
   </div>
 
-  <a class="back" href="gridiron_season.html">← Back to Season (no account)</a>
-</div>
+  <script>
+    const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+    const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
 
-<script>
-const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
-const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+    const TEAMS = {
+      BUF: {name: 'Buffalo Almanacs', color: '#00338D', accent: '#C60C30'},
+      MIA: {name: 'Miami Flamingos', color: '#008E97', accent: '#FC4C02'},
+      NWE: {name: 'New England Puritans', color: '#002244', accent: '#C60C30'},
+      NYP: {name: 'New York Pigeons', color: '#125740', accent: '#FFFFFF'},
+      PIT: {name: 'Pittsburgh Casseroles', color: '#FFB612', accent: '#101820'},
+      BAL: {name: 'Baltimore Tugboats', color: '#241773', accent: '#9E7C0C'},
+      CLE: {name: 'Cleveland Geology', color: '#311D00', accent: '#FF3C00'},
+      CIN: {name: 'Cincinnati Spoons', color: '#FB4F14', accent: '#000000'},
+      TEN: {name: 'Tennessee Vowels', color: '#0C2340', accent: '#4B92DB'},
+      IND: {name: 'Indianapolis Speedway', color: '#002C5F', accent: '#A2AAAD'},
+      HOU: {name: 'Houston Humidity', color: '#03202F', accent: '#A71930'},
+      JAX: {name: 'Jacksonville Mullets', color: '#006778', accent: '#D7A22A'},
+      KCY: {name: 'Kansas City Middlemen', color: '#E31837', accent: '#FFB81C'},
+      LVG: {name: 'Las Vegas The House', color: '#000000', accent: '#A5ACAF'},
+      DEN: {name: 'Denver Prospectors', color: '#FB4F14', accent: '#002244'},
+      LAP: {name: 'Los Angeles Smog', color: '#003594', accent: '#FFA300'},
+      PHI: {name: 'Philadelphia Mummers', color: '#004C54', accent: '#A5ACAF'},
+      DAL: {name: 'Dallas Tycoons', color: '#041E42', accent: '#869397'},
+      NYA: {name: 'New York Gargoyles', color: '#0B2265', accent: '#A71930'},
+      WAS: {name: 'Washington Monuments', color: '#5A1414', accent: '#FFB612'},
+      CHI: {name: 'Chicago Gusts', color: '#0B162A', accent: '#C83803'},
+      GBP: {name: 'Green Bay Curds', color: '#203731', accent: '#FFB612'},
+      MIN: {name: 'Minnesota Loons', color: '#4F2683', accent: '#FFC62F'},
+      DET: {name: 'Detroit Potholes', color: '#0076B6', accent: '#B0B7BC'},
+      NOS: {name: 'New Orleans Gumbo', color: '#D3BC8D', accent: '#101820'},
+      CAR: {name: 'Carolina Sweet Tea', color: '#0085CA', accent: '#101820'},
+      ATL: {name: 'Atlanta Offramps', color: '#A71930', accent: '#000000'},
+      TAM: {name: 'Tampa Bay Manatees', color: '#D50A0A', accent: '#34302B'},
+      SFO: {name: 'San Francisco Fog', color: '#AA0000', accent: '#B3995D'},
+      SEA: {name: 'Seattle Drizzle', color: '#002244', accent: '#69BE28'},
+      LAM: {name: 'Los Angeles Billboards', color: '#0073CF', accent: '#FFB81C'},
+      ARI: {name: 'Arizona Mirage', color: '#97233F', accent: '#FFB612'},
+    };
 
-// Redirect if already signed in
-sb.auth.getSession().then(function(r) {
-  if (r.data.session) window.location.href = 'gridiron_season.html';
-});
+    let supabase;
+    let signupFormData = {};
+    let selectedTeam = null;
 
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(function(t,i){ t.classList.toggle('active', (i===0&&tab==='signin')||(i===1&&tab==='signup')); });
-  document.getElementById('form-signin').style.display = tab==='signin'?'':'none';
-  document.getElementById('form-signup').style.display = tab==='signup'?'':'none';
-}
+    supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-async function doSignIn() {
-  var email = document.getElementById('si-email').value.trim();
-  var pass  = document.getElementById('si-pass').value;
-  var msg   = document.getElementById('si-msg');
-  msg.className='msg'; msg.textContent='Signing in…';
-  var { error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { msg.className='msg err'; msg.textContent=error.message; return; }
-  window.location.href = 'gridiron_season.html';
-}
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      event.target.classList.add('active');
+      
+      document.getElementById('subtitle').textContent = tab === 'signin' ? 'WELCOME BACK' : 'JOIN THE LEAGUE';
+    }
 
-async function doSignUp() {
-  var name  = document.getElementById('su-name').value.trim();
-  var email = document.getElementById('su-email').value.trim();
-  var pass  = document.getElementById('su-pass').value;
-  var team  = document.getElementById('su-team').value;
-  var msg   = document.getElementById('su-msg');
-  if (!name||!email||!pass||!team) { msg.className='msg err'; msg.textContent='All fields required.'; return; }
-  msg.className='msg'; msg.textContent='Creating account…';
-  var { data, error } = await sb.auth.signUp({ email, password: pass });
-  if (error) { msg.className='msg err'; msg.textContent=error.message; return; }
-  if (data.user) {
-    await sb.from('profiles').insert({ id: data.user.id, display_name: name, team_abbr: team });
-  }
-  msg.className='msg ok'; msg.textContent='Account created! Redirecting…';
-  setTimeout(function(){ window.location.href = 'gridiron_season.html'; }, 1000);
-}
-</script>
+    async function handleSignIn(e) {
+      e.preventDefault();
+      const email = document.getElementById('signin-email').value;
+      const password = document.getElementById('signin-password').value;
+      
+      const {error} = await supabase.auth.signInWithPassword({email, password});
+      
+      if (error) {
+        document.getElementById('signin-error').textContent = error.message;
+      } else {
+        window.location.href = 'gridiron_season.html';
+      }
+    }
+
+    function handleSignUpStep1(e) {
+      e.preventDefault();
+      signupFormData.name = document.getElementById('signup-name').value;
+      signupFormData.email = document.getElementById('signup-email').value;
+      signupFormData.password = document.getElementById('signup-password').value;
+      
+      document.getElementById('signup-step1').style.display = 'none';
+      document.getElementById('signup-step2').style.display = 'block';
+      renderTeamPicker();
+    }
+
+    function renderTeamPicker() {
+      const abbrs = Object.keys(TEAMS).sort();
+      const html = abbrs.map(abbr => {
+        const team = TEAMS[abbr];
+        return `
+          <div class="team-box" onclick="selectTeam('${abbr}', this)" style="color: ${team.color};">
+            <div class="team-abbr">${abbr}</div>
+            <div class="team-name">${team.name}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('team-grid').innerHTML = html;
+    }
+
+    function selectTeam(abbr, el) {
+      document.querySelectorAll('.team-box').forEach(t => t.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedTeam = abbr;
+      document.getElementById('create-btn').disabled = false;
+    }
+
+    async function handleSignUpStep2() {
+      if (!selectedTeam) {
+        document.getElementById('signup-error2').textContent = 'Please select a team';
+        return;
+      }
+
+      const {data, error: signupError} = await supabase.auth.signUp({
+        email: signupFormData.email,
+        password: signupFormData.password,
+      });
+
+      if (signupError) {
+        document.getElementById('signup-error2').textContent = signupError.message;
+        return;
+      }
+
+      // Create profile
+      const {error: profileError} = await supabase.from('profiles').insert({
+        id: data.user.id,
+        display_name: signupFormData.name,
+        team_abbr: selectedTeam,
+      });
+
+      if (profileError) {
+        document.getElementById('signup-error2').textContent = profileError.message;
+        return;
+      }
+
+      window.location.href = 'gridiron_season.html';
+    }
+
+    function signupBackToStep1() {
+      document.getElementById('signup-step2').style.display = 'none';
+      document.getElementById('signup-step1').style.display = 'block';
+      selectedTeam = null;
+    }
+  </script>
 </body>
 </html>

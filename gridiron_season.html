@@ -2,497 +2,754 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>The Gridiron | Season</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#080808; color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; padding:20px; }
-    header { display:flex; align-items:baseline; gap:14px; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #1c1c1c; }
-    header h1 { font-size:18px; letter-spacing:4px; font-weight:900; text-transform:uppercase; }
-    header .sub { font-size:11px; color:#444; letter-spacing:1px; }
-    .nav-links { margin-left:auto; display:flex; gap:10px; align-items:center; }
-    .nav-links a { font-size:10px; color:#555; text-decoration:none; letter-spacing:1px; font-weight:700; text-transform:uppercase; transition:color .15s; }
-    .nav-links a:hover, .nav-links a.active { color:#f0c830; }
-    .dev-badge { font-size:9px; color:#400; background:#1a0000; border:1px solid #3a0000; padding:2px 7px; border-radius:2px; cursor:pointer; letter-spacing:1px; font-weight:700; user-select:none; }
-    .dev-badge:hover { color:#f00; border-color:#800000; }
-
-    .week-nav { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
-    .week-nav .wn-btn { background:#111; border:1px solid #222; color:#666; padding:5px 14px; border-radius:2px; cursor:pointer; font-size:11px; font-weight:700; letter-spacing:1px; font-family:inherit; transition:all .12s; }
-    .week-nav .wn-btn:hover:not(:disabled) { border-color:#444; color:#fff; }
-    .week-nav .wn-btn:disabled { opacity:.25; pointer-events:none; }
-    .week-nav .wn-label { font-size:15px; font-weight:900; letter-spacing:3px; color:#f0c830; text-transform:uppercase; }
-    .week-nav .wn-sub { font-size:10px; color:#333; letter-spacing:1px; margin-left:6px; }
-    .adv-btn { margin-left:auto; background:#0d0800; border:1px solid #5a4200; color:#c08000; padding:5px 14px; border-radius:2px; cursor:pointer; font-size:10px; font-weight:700; letter-spacing:1px; font-family:inherit; transition:all .12s; display:none; }
-    .adv-btn.show { display:inline-block; }
-    .adv-btn:hover { background:#1a0f00; border-color:#f0c830; color:#f0c830; }
-
-    .sec-hdr { font-size:10px; font-weight:700; color:#f0c830; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
-    .sec-hdr::after { content:''; flex:1; height:1px; background:#1e1e1e; }
-
-    .games-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:28px; }
-    @media(max-width:700px) { .games-grid { grid-template-columns:repeat(2,1fr); } }
-    .game-tile { background:#111; border:1px solid #1e1e1e; border-radius:3px; padding:11px 13px; position:relative; transition:border-color .2s; cursor:pointer; }
-    .game-tile:hover { border-color:#333; }
-    .game-tile.is-active { border-color:#7a6800; background:#100e00; }
-    .game-tile.is-over { opacity:.75; }
-    .gt-teams { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
-    .gt-row { display:flex; justify-content:space-between; align-items:center; }
-    .gt-abbr { font-size:12px; font-weight:800; letter-spacing:1.5px; color:rgba(255,255,255,0.7); }
-    .gt-score { font-size:24px; font-weight:900; letter-spacing:-1px; color:#fff; }
-    .gt-row.winner .gt-abbr { color:#fff; }
-    .gt-row.winner .gt-score { color:#f0c830; }
-    .gt-meta { border-top:1px solid #1a1a1a; padding-top:6px; display:flex; align-items:center; justify-content:space-between; }
-    .gt-status { font-size:9px; color:#444; letter-spacing:1px; text-transform:uppercase; }
-    .gt-status.live { color:#3db86a; }
-    .gt-status.final { color:#555; }
-    .gt-live-dot { display:inline-block; width:5px; height:5px; background:#3db86a; border-radius:50%; margin-right:4px; animation:pulse 1.2s infinite; vertical-align:middle; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
-    .gt-play-link { font-size:8px; font-weight:900; letter-spacing:1px; text-transform:uppercase; background:#f0c830; color:#000; padding:2px 6px; border-radius:2px; text-decoration:none; transition:background .12s; }
-    .gt-play-link:hover { background:#ffe566; }
-
-    /* Standings */
-    .standings-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px; }
-    @media(max-width:700px) { .standings-grid { grid-template-columns:1fr; } }
-    .conf-title { font-size:11px; font-weight:900; letter-spacing:2px; color:#aaa; text-transform:uppercase; margin-bottom:10px; }
-    .div-block { margin-bottom:14px; }
-    .div-title { font-size:9px; font-weight:700; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; padding-left:2px; }
-    .std-tbl { width:100%; border-collapse:collapse; font-size:11px; }
-    .std-tbl th { text-align:left; padding:3px 6px; font-size:9px; color:#333; font-weight:700; letter-spacing:1px; }
-    .std-tbl th:not(:first-child) { text-align:center; width:30px; }
-    .std-tbl td { padding:5px 6px; border-top:1px solid #141414; color:rgba(255,255,255,0.55); }
-    .std-tbl td:not(:first-child) { text-align:center; }
-    .std-tbl td:first-child { color:#fff; font-weight:600; }
-    .std-tbl tr.my-team td { color:#f0c830; }
-    .std-tbl .pct { color:#555; font-size:9px; }
-    .std-tbl .pf { color:#555; }
-    .std-tbl .pa { color:#555; }
-    .std-tbl tr.my-team .pf, .std-tbl tr.my-team .pa { color:#a08010; }
-    .std-tbl td.seed-badge { font-size:9px; font-weight:900; color:#f0c830; text-align:center !important; width:18px; padding:5px 2px; }
-    .std-tbl td.elim { color:#3a3a3a !important; }
-    .std-tbl td a { color:inherit; text-decoration:none; }
-    .std-tbl td a:hover { color:#f0c830; }
-
-    /* Playoff Picture */
-    .bracket-wrap { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:28px; }
-    @media(max-width:700px) { .bracket-wrap { grid-template-columns:1fr; } }
-    .bracket-conf { }
-    .bracket-conf-title { font-size:10px; font-weight:900; letter-spacing:2px; color:#888; text-transform:uppercase; margin-bottom:12px; }
-    .bracket-round { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
-    .bracket-round-label { font-size:8px; font-weight:700; color:#333; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
-    .bracket-seed { display:flex; align-items:center; gap:8px; padding:5px 8px; background:#0e0e0e; border:1px solid #1a1a1a; border-radius:2px; font-size:11px; }
-    .bracket-seed .bs-num { font-size:9px; font-weight:900; color:#444; width:12px; flex-shrink:0; }
-    .bracket-seed .bs-name { flex:1; font-weight:700; color:rgba(255,255,255,0.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .bracket-seed .bs-rec { font-size:9px; color:#444; flex-shrink:0; }
-    .bracket-seed.top-seed { border-color:#3a3000; background:#0d0c00; }
-    .bracket-seed.top-seed .bs-num { color:#f0c830; }
-    .bracket-seed.top-seed .bs-name { color:#f0c830; }
-    .bracket-seed.my-team { border-color:#3a3000; }
-    .bracket-seed.my-team .bs-name { color:#f0c830; }
-    .bracket-seed.bye-seed { border-color:#1e3a1e; background:#060e06; }
-    .bracket-matchup { display:flex; flex-direction:column; gap:3px; margin-bottom:6px; padding:5px 8px; background:#0e0e0e; border:1px solid #1a1a1a; border-radius:2px; }
-    .bracket-matchup .bm-row { display:flex; align-items:center; gap:8px; font-size:11px; }
-    .bracket-matchup .bm-num { font-size:9px; font-weight:900; color:#444; width:12px; }
-    .bracket-matchup .bm-name { flex:1; font-weight:700; color:rgba(255,255,255,0.7); }
-    .bracket-matchup .bm-rec { font-size:9px; color:#444; }
-    .bracket-matchup .bm-vs { font-size:9px; color:#333; text-align:center; letter-spacing:1px; }
-    .bracket-matchup .bm-name.my-team { color:#f0c830; }
-    .bracket-bye { display:flex; align-items:center; gap:8px; padding:5px 8px; background:#060e06; border:1px solid #1e3a1e; border-radius:2px; font-size:10px; color:#3a8a3a; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
-
-    /* Dev panel */
-    .dev-panel { display:none; background:#0d0000; border:1px solid #3a0000; padding:7px 12px; margin-bottom:16px; align-items:center; gap:8px; border-radius:2px; }
-    .dev-panel.open { display:flex; flex-wrap:wrap; }
-    .dev-tag { font-size:9px; color:#c00; font-weight:900; letter-spacing:2px; }
-    .dev-btn { background:#1a0000; border:1px solid #500000; color:#e05050; padding:4px 10px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:.5px; cursor:pointer; font-family:inherit; text-transform:uppercase; transition:all .12s; }
-    .dev-btn:hover { background:#2e0000; border-color:#800; color:#ff8080; }
-    .dev-sep { width:1px; height:16px; background:#3a0000; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Gridiron - Season</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #080808;
+      color: #f5f5f5;
+      line-height: 1.4;
+    }
+    
+    a {
+      color: #f0c830;
+      text-decoration: none;
+    }
+    
+    a:hover {
+      opacity: 0.8;
+    }
+
+    /* Header */
+    .header {
+      background: #0d0b00;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 16px 24px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #f0c830;
+      cursor: pointer;
+    }
+
+    .nav-center {
+      display: flex;
+      gap: 32px;
+      flex: 1;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .nav-center a {
+      color: #aaa;
+      transition: color 0.2s;
+    }
+
+    .nav-center a.active {
+      color: #f0c830;
+    }
+
+    .nav-center a:hover {
+      color: #f0c830;
+    }
+
+    .nav-right {
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .dev-badge {
+      background: #5a1111;
+      color: #ff6666;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    /* Season Header */
+    .season-header {
+      text-align: center;
+      padding: 32px 20px;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    /* Main Content */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    /* User's Game Card */
+    .user-game-card {
+      border: 2px solid #7a6800;
+      border-radius: 8px;
+      background: #0d0b00;
+      padding: 24px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .game-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff00;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .game-log-toggle {
+      cursor: pointer;
+      color: #f0c830;
+    }
+
+    /* Game Body */
+    .game-body {
+      margin-bottom: 24px;
+    }
+
+    .teams-scores {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .team-left, .team-right {
+      flex: 1;
+    }
+
+    .team-left {
+      text-align: left;
+    }
+
+    .team-right {
+      text-align: right;
+    }
+
+    .team-info {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .team-name {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .score-display {
+      flex: 0 0 100px;
+      text-align: center;
+    }
+
+    .score {
+      font-size: 48px;
+      font-weight: 900;
+      color: #f0c830;
+      margin: 0 8px;
+    }
+
+    .possession-arrow {
+      font-size: 20px;
+      margin: 0 8px;
+      color: #f0c830;
+    }
+
+    .field-status {
+      background: #0a0a0a;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .down-distance {
+      font-weight: 700;
+      color: #f0c830;
+    }
+
+    .yardline {
+      color: #999;
+    }
+
+    /* Play Log */
+    .play-log {
+      background: #0a0a0a;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 20px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    .play-entry {
+      padding: 6px 0;
+      border-bottom: 1px solid #1a1a1a;
+      color: #bbb;
+    }
+
+    .play-entry:last-child {
+      border-bottom: none;
+    }
+
+    .play-entry.td {
+      background: rgba(240, 200, 48, 0.1);
+      padding: 6px 8px;
+      border-radius: 2px;
+      color: #f0c830;
+    }
+
+    .play-entry.turnover {
+      background: rgba(200, 40, 40, 0.1);
+      color: #ff6666;
+    }
+
+    /* Play Call Buttons */
+    .play-call-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .play-btn {
+      flex: 1;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #f0c830;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .play-btn:hover {
+      background: #f0c830;
+      color: #080808;
+    }
+
+    .vote-flash {
+      background: #00aa00;
+      color: #000;
+      padding: 8px 12px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      animation: fadeOut 2s forwards;
+      margin-top: 8px;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Other Games Grid */
+    .other-games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .game-card {
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      background: #0d0b00;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+
+    .game-card:hover {
+      border-color: #444;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .game-card .game-header {
+      margin-bottom: 12px;
+    }
+
+    .game-card .teams-scores {
+      margin-bottom: 12px;
+    }
+
+    .game-card .team-name {
+      font-size: 13px;
+    }
+
+    .game-card .score {
+      font-size: 32px;
+    }
+
+    .game-card .field-status {
+      padding: 8px;
+      font-size: 10px;
+      margin-bottom: 12px;
+    }
+
+    .game-card .play-log {
+      max-height: 80px;
+      padding: 8px;
+      font-size: 10px;
+      margin-bottom: 0;
+    }
+
+    /* Dev Panel */
+    .dev-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 100vh;
+      background: #0d0b00;
+      border-left: 2px solid #5a1111;
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 10000;
+    }
+
+    .dev-panel.visible {
+      display: block;
+    }
+
+    .dev-panel h3 {
+      color: #ff6666;
+      font-size: 13px;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+
+    .dev-btn {
+      width: 100%;
+      padding: 10px;
+      background: #5a1111;
+      border: 1px solid #7a1111;
+      color: #ff6666;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+
+    .dev-btn:hover {
+      background: #7a1111;
+      color: #ffaaaa;
+    }
+
+    .dev-status {
+      color: #666;
+      font-size: 10px;
+      margin-top: 16px;
+      padding: 8px;
+      background: #0a0a0a;
+      border-radius: 3px;
+    }
+  </style>
 </head>
 <body>
-
-<header>
-  <h1>The Gridiron</h1>
-  <span class="sub" id="hdr-sub">SEASON 1 &middot; WEEK 1</span>
-  <div class="nav-links">
-    <a href="gridiron_season.html" class="active">Season</a>
-    <a href="gridiron_stats.html">Stats</a>
-    <a href="gridiron_draft.html">Draft</a>
-    <a href="gridiron_probabilities.html">Odds</a>
-    <span class="dev-badge" onclick="devToggle()" title="Dev Panel (` key)">DEV</span>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <a href="gridiron_season.html" class="logo">THE GRIDIRON</a>
+      <div class="nav-center">
+        <a href="gridiron_season.html" class="active">LEAGUE</a>
+        <a href="gridiron_standings.html">STANDINGS</a>
+        <a href="gridiron_stats.html">STATS</a>
+        <a href="gridiron_draft.html">DRAFT</a>
+      </div>
+      <div class="nav-right">
+        <span id="auth-display">Sign In</span>
+        <span class="dev-badge">DEV</span>
+      </div>
+    </div>
   </div>
-</header>
 
-<div class="dev-panel" id="dev-panel">
-  <span class="dev-tag">DEV</span>
-  <div class="dev-sep"></div>
-  <button class="dev-btn" onclick="devSimWeek()">Simulate Week</button>
-  <button class="dev-btn" onclick="devNextWeek()">Next Week</button>
-  <button class="dev-btn" onclick="devResetSeason()">Reset Season</button>
-</div>
+  <!-- Season Header -->
+  <div class="season-header" id="season-header">SEASON 1 · DAY 1</div>
 
-<div class="week-nav">
-  <button class="wn-btn" id="btn-prev" onclick="changeWeek(-1)">&#9664; PREV</button>
-  <span class="wn-label" id="wn-label">WEEK 1</span>
-  <span class="wn-sub" id="wn-sub">of 17</span>
-  <button class="wn-btn" id="btn-next" onclick="changeWeek(1)">NEXT &#9654;</button>
-  <button class="adv-btn" id="adv-btn" onclick="advanceWeek()">ADVANCE TO NEXT WEEK &rarr;</button>
-</div>
+  <!-- Main Content -->
+  <div class="container">
+    <!-- User's Game -->
+    <div id="user-game-container"></div>
 
-<div class="sec-hdr" id="scoreboard-hdr">Week 1 &middot; Scoreboard</div>
-<div class="games-grid" id="games-grid"></div>
+    <!-- Other Games -->
+    <div class="other-games" id="other-games"></div>
+  </div>
 
-<div class="sec-hdr">Standings</div>
-<div class="standings-grid" id="standings-grid"></div>
+  <!-- Dev Panel -->
+  <div class="dev-panel" id="dev-panel">
+    <h3>DEV TOOLS</h3>
+    <button class="dev-btn" id="sim-day-btn">SIMULATE DAY (50x)</button>
+    <button class="dev-btn" id="reset-season-btn">RESET SEASON</button>
+    <div class="dev-status" id="dev-status">Ready</div>
+  </div>
 
-<div class="sec-hdr">Playoff Picture</div>
-<div class="bracket-wrap" id="bracket-wrap"></div>
+  <script>
+    const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
+    const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
 
-<script>
-const SUPA_URL = 'https://pdxvbmzcqkbgcffltsjs.supabase.co';
-const SUPA_KEY = 'sb_publishable_jv5woX21YcyMhIjzUJgGuA_r-6YrP9F';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+    const TEAMS = {
+      BUF: {name: 'Buffalo Almanacs', color: '#00338D', accent: '#C60C30'},
+      MIA: {name: 'Miami Flamingos', color: '#008E97', accent: '#FC4C02'},
+      NWE: {name: 'New England Puritans', color: '#002244', accent: '#C60C30'},
+      NYP: {name: 'New York Pigeons', color: '#125740', accent: '#FFFFFF'},
+      PIT: {name: 'Pittsburgh Casseroles', color: '#FFB612', accent: '#101820'},
+      BAL: {name: 'Baltimore Tugboats', color: '#241773', accent: '#9E7C0C'},
+      CLE: {name: 'Cleveland Geology', color: '#311D00', accent: '#FF3C00'},
+      CIN: {name: 'Cincinnati Spoons', color: '#FB4F14', accent: '#000000'},
+      TEN: {name: 'Tennessee Vowels', color: '#0C2340', accent: '#4B92DB'},
+      IND: {name: 'Indianapolis Speedway', color: '#002C5F', accent: '#A2AAAD'},
+      HOU: {name: 'Houston Humidity', color: '#03202F', accent: '#A71930'},
+      JAX: {name: 'Jacksonville Mullets', color: '#006778', accent: '#D7A22A'},
+      KCY: {name: 'Kansas City Middlemen', color: '#E31837', accent: '#FFB81C'},
+      LVG: {name: 'Las Vegas The House', color: '#000000', accent: '#A5ACAF'},
+      DEN: {name: 'Denver Prospectors', color: '#FB4F14', accent: '#002244'},
+      LAP: {name: 'Los Angeles Smog', color: '#003594', accent: '#FFA300'},
+      PHI: {name: 'Philadelphia Mummers', color: '#004C54', accent: '#A5ACAF'},
+      DAL: {name: 'Dallas Tycoons', color: '#041E42', accent: '#869397'},
+      NYA: {name: 'New York Gargoyles', color: '#0B2265', accent: '#A71930'},
+      WAS: {name: 'Washington Monuments', color: '#5A1414', accent: '#FFB612'},
+      CHI: {name: 'Chicago Gusts', color: '#0B162A', accent: '#C83803'},
+      GBP: {name: 'Green Bay Curds', color: '#203731', accent: '#FFB612'},
+      MIN: {name: 'Minnesota Loons', color: '#4F2683', accent: '#FFC62F'},
+      DET: {name: 'Detroit Potholes', color: '#0076B6', accent: '#B0B7BC'},
+      NOS: {name: 'New Orleans Gumbo', color: '#D3BC8D', accent: '#101820'},
+      CAR: {name: 'Carolina Sweet Tea', color: '#0085CA', accent: '#101820'},
+      ATL: {name: 'Atlanta Offramps', color: '#A71930', accent: '#000000'},
+      TAM: {name: 'Tampa Bay Manatees', color: '#D50A0A', accent: '#34302B'},
+      SFO: {name: 'San Francisco Fog', color: '#AA0000', accent: '#B3995D'},
+      SEA: {name: 'Seattle Drizzle', color: '#002244', accent: '#69BE28'},
+      LAM: {name: 'Los Angeles Billboards', color: '#0073CF', accent: '#FFB81C'},
+      ARI: {name: 'Arizona Mirage', color: '#97233F', accent: '#FFB612'},
+    };
 
-var TEAMS = [
-  { city:'Buffalo',       name:'Almanacs',   abbr:'BUF', conf:'AFG', div:'East'  },
-  { city:'Miami',         name:'Flamingos',  abbr:'MIA', conf:'AFG', div:'East'  },
-  { city:'New England',   name:'Puritans',   abbr:'NWE', conf:'AFG', div:'East'  },
-  { city:'New York',      name:'Pigeons',    abbr:'NYP', conf:'AFG', div:'East'  },
-  { city:'Pittsburgh',    name:'Casseroles', abbr:'PIT', conf:'AFG', div:'North' },
-  { city:'Baltimore',     name:'Tugboats',   abbr:'BAL', conf:'AFG', div:'North' },
-  { city:'Cleveland',     name:'Geology',    abbr:'CLE', conf:'AFG', div:'North' },
-  { city:'Cincinnati',    name:'Spoons',     abbr:'CIN', conf:'AFG', div:'North' },
-  { city:'Tennessee',     name:'Vowels',     abbr:'TEN', conf:'AFG', div:'South' },
-  { city:'Indianapolis',  name:'Speedway',   abbr:'IND', conf:'AFG', div:'South' },
-  { city:'Houston',       name:'Humidity',   abbr:'HOU', conf:'AFG', div:'South' },
-  { city:'Jacksonville',  name:'Mullets',    abbr:'JAX', conf:'AFG', div:'South' },
-  { city:'Kansas City',   name:'Middlemen',  abbr:'KCY', conf:'AFG', div:'West'  },
-  { city:'Las Vegas',     name:'The House',  abbr:'LVG', conf:'AFG', div:'West'  },
-  { city:'Denver',        name:'Prospectors',abbr:'DEN', conf:'AFG', div:'West'  },
-  { city:'Los Angeles',   name:'Smog',       abbr:'LAP', conf:'AFG', div:'West'  },
-  { city:'Philadelphia',  name:'Mummers',    abbr:'PHI', conf:'NFG', div:'East'  },
-  { city:'Dallas',        name:'Tycoons',    abbr:'DAL', conf:'NFG', div:'East'  },
-  { city:'New York',      name:'Gargoyles',  abbr:'NYA', conf:'NFG', div:'East'  },
-  { city:'Washington',    name:'Monuments',  abbr:'WAS', conf:'NFG', div:'East'  },
-  { city:'Chicago',       name:'Gusts',      abbr:'CHI', conf:'NFG', div:'North' },
-  { city:'Green Bay',     name:'Curds',      abbr:'GBP', conf:'NFG', div:'North' },
-  { city:'Minnesota',     name:'Loons',      abbr:'MIN', conf:'NFG', div:'North' },
-  { city:'Detroit',       name:'Potholes',   abbr:'DET', conf:'NFG', div:'North' },
-  { city:'New Orleans',   name:'Gumbo',      abbr:'NOS', conf:'NFG', div:'South' },
-  { city:'Carolina',      name:'Sweet Tea',  abbr:'CAR', conf:'NFG', div:'South' },
-  { city:'Atlanta',       name:'Offramps',   abbr:'ATL', conf:'NFG', div:'South' },
-  { city:'Tampa Bay',     name:'Manatees',   abbr:'TAM', conf:'NFG', div:'South' },
-  { city:'San Francisco', name:'Fog',        abbr:'SFO', conf:'NFG', div:'West'  },
-  { city:'Seattle',       name:'Drizzle',    abbr:'SEA', conf:'NFG', div:'West'  },
-  { city:'Los Angeles',   name:'Billboards', abbr:'LAM', conf:'NFG', div:'West'  },
-  { city:'Arizona',       name:'Mirage',     abbr:'ARI', conf:'NFG', div:'West'  },
-];
-var TEAM_MAP = {};
-TEAMS.forEach(function(t){ TEAM_MAP[t.abbr]=t; });
+    let supabase;
+    let MY_TEAM = 'BUF';
+    let currentSeason = null;
+    let allGames = [];
+    let tickInterval = null;
 
-var S = null;       // season row from DB
-var allGames = [];  // all game rows from DB for current view
-var viewWeek = 1;
-var MY_TEAM = null; // logged-in user's team
-var realtimeChannel = null;
+    // Initialize
+    async function initSeason() {
+      supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+      
+      // Check auth
+      const {data: {user}} = await supabase.auth.getUser();
+      if (user) {
+        const {data: profile} = await supabase.from('profiles').select('team_abbr').eq('id', user.id).single();
+        if (profile?.team_abbr) MY_TEAM = profile.team_abbr;
+        document.getElementById('auth-display').textContent = `${user.email} (${MY_TEAM})`;
+      } else {
+        document.getElementById('auth-display').innerHTML = '<a href="gridiron_auth.html">Sign In</a>';
+      }
 
-// ── Schedule Generation (same algorithm as before) ─────────────
-function generateSchedule() {
-  var allG = [], playCount = {}, teamTotal = {};
-  TEAMS.forEach(function(a){ teamTotal[a.abbr]=0; TEAMS.forEach(function(b){ playCount[a.abbr+'_'+b.abbr]=0; }); });
-  function addGame(aw,ho){ allG.push({away:aw,home:ho}); teamTotal[aw]++; teamTotal[ho]++; playCount[aw+'_'+ho]++; playCount[ho+'_'+aw]++; }
-  for(var i=0;i<TEAMS.length;i++) for(var j=i+1;j<TEAMS.length;j++) if(TEAMS[i].conf===TEAMS[j].conf&&TEAMS[i].div===TEAMS[j].div){ addGame(TEAMS[i].abbr,TEAMS[j].abbr); addGame(TEAMS[j].abbr,TEAMS[i].abbr); }
-  var attempts=0;
-  while(allG.length<272&&attempts<80000){ attempts++; var need=TEAMS.filter(function(t){return teamTotal[t.abbr]<17;}); if(!need.length)break; var a=need[Math.floor(Math.random()*need.length)]; var valid=TEAMS.filter(function(t){return t.abbr!==a.abbr&&teamTotal[t.abbr]<17&&playCount[a.abbr+'_'+t.abbr]<2;}); if(!valid.length)continue; var b=valid[Math.floor(Math.random()*valid.length)]; Math.random()<0.5?addGame(a.abbr,b.abbr):addGame(b.abbr,a.abbr); }
-  for(var s=allG.length-1;s>0;s--){ var r=Math.floor(Math.random()*(s+1)); var tmp=allG[s];allG[s]=allG[r];allG[r]=tmp; }
-  var weeks=[]; for(var w=0;w<17;w++) weeks.push([]);
-  for(var gi=0;gi<allG.length;gi++){ var game=allG[gi]; var wo=[]; for(var w=0;w<17;w++) wo.push(w); wo.sort(function(){return Math.random()-0.5;}); for(var wi=0;wi<wo.length;wi++){ var ww=wo[wi]; if(weeks[ww].length>=16)continue; var busy={}; weeks[ww].forEach(function(g){busy[g.away]=true;busy[g.home]=true;}); if(!busy[game.away]&&!busy[game.home]){weeks[ww].push(game);break;} } }
-  return weeks;
-}
+      // Fetch or create season
+      let {data: seasonData} = await supabase.from('seasons').select('*').eq('id', 1);
+      
+      if (!seasonData || seasonData.length === 0) {
+        // Create first season
+        await supabase.from('seasons').insert({id: 1, week: 1, season_num: 1});
+        seasonData = [{id: 1, week: 1, season_num: 1}];
+      }
 
-// ── Helpers ────────────────────────────────────────────────────
-function pct(r){ var g=r.w+r.l+r.tie; return g?r.w/g:0; }
-function pctStr(r){ var g=r.w+r.l+r.tie; if(!g)return '—'; return (r.w/g).toFixed(3).replace(/^0/,''); }
-function recStr(r){ return r.w+'-'+r.l+(r.tie?'-'+r.tie:''); }
-function fmt(s){ var m=Math.floor(s/60),sec=s%60; return m+':'+(sec<10?'0':'')+sec; }
-function cmpTeam(a,b,records){ var ra=records[a.abbr],rb=records[b.abbr]; var pa=pct(ra),pb=pct(rb); if(pb!==pa)return pb-pa; if(rb.pf!==ra.pf)return rb.pf-ra.pf; return ra.pa-rb.pa; }
+      currentSeason = seasonData[0];
 
-function computeRecords(games){
-  var records={};
-  TEAMS.forEach(function(t){records[t.abbr]={w:0,l:0,tie:0,pf:0,pa:0};});
-  games.forEach(function(g){
-    if(g.status!=='final')return;
-    var ra=records[g.away_abbr],rh=records[g.home_abbr];
-    if(!ra||!rh)return;
-    ra.pf+=g.away_score;ra.pa+=g.home_score;
-    rh.pf+=g.home_score;rh.pa+=g.away_score;
-    if(g.winner==='away'){ra.w++;rh.l++;}
-    else if(g.winner==='home'){rh.w++;ra.l++;}
-    else{ra.tie++;rh.tie++;}
-  });
-  return records;
-}
+      // Generate day 1 games if none exist
+      let {data: existingGames} = await supabase.from('games').select('*').eq('season_week', currentSeason.week);
+      if (!existingGames || existingGames.length === 0) {
+        generateNewDayGames(currentSeason.week);
+      }
 
-function getPlayoffSeeds(conf,records){
-  var ct=TEAMS.filter(function(t){return t.conf===conf;});
-  var dw=['East','North','South','West'].map(function(div){ var dt=ct.filter(function(t){return t.div===div;}); dt.sort(function(a,b){return cmpTeam(a,b,records);}); return dt[0]; });
-  dw.sort(function(a,b){return cmpTeam(a,b,records);});
-  var wm={}; dw.forEach(function(t){wm[t.abbr]=true;});
-  var nw=ct.filter(function(t){return !wm[t.abbr];}); nw.sort(function(a,b){return cmpTeam(a,b,records);});
-  return dw.concat(nw.slice(0,3));
-}
+      // Fetch all games for current day
+      await loadGamesForDay(currentSeason.week);
 
-// ── Season Init ────────────────────────────────────────────────
-async function initSeason(){
-  // Check auth
-  var { data: { user } } = await sb.auth.getUser();
-  if(user){
-    var { data: prof } = await sb.from('profiles').select('team_abbr,display_name').eq('id',user.id).maybeSingle();
-    if(prof){ MY_TEAM=prof.team_abbr; }
-    var hdr=document.querySelector('header .nav-links');
-    if(hdr){
-      var signinLink = document.getElementById('signin-nav-link');
-      if(!signinLink){
-        var a=document.createElement('a');
-        a.id='signin-nav-link';
-        a.href='gridiron_auth.html';
-        a.style.color='#f0c830';
-        a.textContent=(prof?prof.display_name+' ('+prof.team_abbr+')':'My Account');
-        hdr.insertBefore(a, hdr.firstChild);
+      // Start realtime subscription
+      supabase.channel('games-updates').on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games'}, (payload) => {
+        const updated = payload.new;
+        const idx = allGames.findIndex(g => g.id === updated.id);
+        if (idx >= 0) {
+          allGames[idx] = updated;
+          render();
+        }
+      }).subscribe();
+
+      supabase.channel('seasons-updates').on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'seasons'}, (payload) => {
+        currentSeason = payload.new;
+        render();
+      }).subscribe();
+
+      // Start ticking games every 5 seconds
+      tickInterval = setInterval(() => callTickGames(), 5000);
+
+      render();
+    }
+
+    async function loadGamesForDay(week) {
+      const {data} = await supabase.from('games').select('*').eq('season_week', week);
+      allGames = data || [];
+    }
+
+    async function generateNewDayGames(week) {
+      const abbrs = Object.keys(TEAMS);
+      for (let i = abbrs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [abbrs[i], abbrs[j]] = [abbrs[j], abbrs[i]];
+      }
+
+      const games = [];
+      for (let i = 0; i < 16; i++) {
+        games.push({
+          season_week: week,
+          away_abbr: abbrs[i * 2],
+          home_abbr: abbrs[i * 2 + 1],
+          away_score: 0,
+          home_score: 0,
+          quarter: 1,
+          secs: 900,
+          down: 1,
+          distance: 10,
+          possession: 'away',
+          yardline: 75,
+          play_log: [],
+          last_play: 'Kickoff',
+          status: 'scheduled',
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      await supabase.from('games').insert(games);
+    }
+
+    async function callTickGames() {
+      try {
+        const response = await fetch('/.netlify/functions/tick-games', {method: 'POST'});
+        const result = await response.json();
+        console.log('Tick result:', result);
+      } catch (e) {
+        console.error('Tick error:', e);
       }
     }
-  } else {
-    var hdr=document.querySelector('header .nav-links');
-    if(hdr){
-      var a=document.createElement('a');
-      a.href='gridiron_auth.html';
-      a.textContent='Sign In';
-      hdr.insertBefore(a, hdr.firstChild);
+
+    function render() {
+      // Update season header
+      const seasonText = `SEASON ${currentSeason.season_num} · DAY ${currentSeason.week}`;
+      document.getElementById('season-header').textContent = seasonText;
+
+      // Find user's game
+      const userGame = allGames.find(g => g.away_abbr === MY_TEAM || g.home_abbr === MY_TEAM);
+      const otherGames = allGames.filter(g => g.id !== userGame?.id);
+
+      // Render user's game
+      const userContainer = document.getElementById('user-game-container');
+      if (userGame) {
+        userContainer.innerHTML = renderGameCard(userGame, true);
+        const runBtn = userContainer.querySelector('#btn-run');
+        const passBtn = userContainer.querySelector('#btn-pass');
+        const kickBtn = userContainer.querySelector('#btn-kick');
+        
+        if (runBtn) {
+          runBtn.addEventListener('click', () => submitPlayCall(userGame.id, 'run'));
+        }
+        if (passBtn) {
+          passBtn.addEventListener('click', () => submitPlayCall(userGame.id, 'pass'));
+        }
+        if (kickBtn) {
+          kickBtn.addEventListener('click', () => submitPlayCall(userGame.id, 'kick'));
+        }
+      }
+
+      // Render other games
+      const otherContainer = document.getElementById('other-games');
+      otherContainer.innerHTML = otherGames.map(g => renderGameCard(g, false)).join('');
     }
-  }
 
-  // Try to fetch existing season
-  var { data: existing } = await sb.from('seasons').select('*').eq('id',1).maybeSingle();
-  if(existing){ S=existing; }
-  else {
-    // Create season
-    var sched=generateSchedule();
-    var { error:insErr } = await sb.from('seasons').insert({id:1,week:1,schedule:sched});
-    if(insErr){
-      // Race condition — fetch existing
-      var { data: existing2 } = await sb.from('seasons').select('*').eq('id',1).single();
-      S=existing2;
-    } else {
-      S={id:1,week:1,schedule:sched};
-      // Bulk insert all 272 games
-      var gameRows=[];
-      sched.forEach(function(wk,wi){ wk.forEach(function(g){ gameRows.push({season_week:wi+1,away_abbr:g.away,home_abbr:g.home,away_score:0,home_score:0,quarter:1,secs:900,status:'scheduled',winner:null,updated_at:new Date().toISOString()}); }); });
-      // Insert in batches of 100
-      for(var i=0;i<gameRows.length;i+=100){ await sb.from('games').insert(gameRows.slice(i,i+100)); }
-    }
-  }
+    function renderGameCard(game, isUserGame) {
+      const cardClass = isUserGame ? 'user-game-card' : 'game-card';
+      const status = game.status === 'scheduled' ? 'SCHEDULED' : game.status === 'final' ? 'FINAL' : `Q${game.quarter}`;
+      const timeStr = game.status === 'final' ? 'FINAL' : `Q${game.quarter} · ${Math.floor(game.secs / 60)}:${String(game.secs % 60).padStart(2, '0')}`;
+      const liveIndicator = game.status === 'live' ? '<span class="live-dot"></span>' : '';
+      
+      const awayTeam = TEAMS[game.away_abbr];
+      const homeTeam = TEAMS[game.home_abbr];
+      
+      const possession = game.possession === 'away' ? '←BALL→' : '←BALL→';
+      const downDist = `${game.down}${['st', 'nd', 'rd', 'th'][game.down - 1]} & ${game.distance}`;
+      const yardline = `${game.away_abbr} ${game.yardline}-yd line`;
 
-  viewWeek=S.week;
-  await loadWeekGames();
-  subscribeRealtime();
-  renderAll();
-}
-
-async function loadWeekGames(){
-  // Fetch ALL games (for standings across all weeks)
-  var { data: games } = await sb.from('games').select('*');
-  allGames = games || [];
-}
-
-// ── Real-time subscription ─────────────────────────────────────
-function subscribeRealtime(){
-  if(realtimeChannel) sb.removeChannel(realtimeChannel);
-  realtimeChannel = sb.channel('games-realtime')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'games'},function(payload){
-      var updated=payload.new;
-      for(var i=0;i<allGames.length;i++){ if(allGames[i].id===updated.id){ allGames[i]=updated; break; } }
-      renderAll();
-    })
-    .subscribe();
-}
-
-// ── Tick games (call Edge Function) ───────────────────────────
-async function tickGames(){
-  try {
-    await fetch(SUPA_URL+'/functions/v1/tick-games',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'}
-    });
-  } catch(e){}
-}
-
-// ── Render ─────────────────────────────────────────────────────
-function renderAll(){
-  var records=computeRecords(allGames);
-  renderHeader();
-  renderGames(records);
-  renderStandings(records);
-  renderBracket(records);
-  renderWeekNav();
-}
-
-function renderHeader(){
-  document.getElementById('hdr-sub').textContent='SEASON 1 \u00b7 WEEK '+S.week;
-  document.getElementById('wn-label').textContent='WEEK '+viewWeek;
-  document.getElementById('scoreboard-hdr').textContent='Week '+viewWeek+' \u00b7 Scoreboard';
-}
-
-function renderWeekNav(){
-  document.getElementById('btn-prev').disabled=(viewWeek<=1);
-  document.getElementById('btn-next').disabled=(viewWeek>=17);
-  var curWkGames=allGames.filter(function(g){return g.season_week===S.week;});
-  var allDone=curWkGames.length>0&&curWkGames.every(function(g){return g.status==='final';});
-  var advBtn=document.getElementById('adv-btn');
-  if(viewWeek===S.week&&allDone&&S.week<17) advBtn.classList.add('show');
-  else advBtn.classList.remove('show');
-}
-
-function renderGames(records){
-  var grid=document.getElementById('games-grid');
-  var wkGames=allGames.filter(function(g){return g.season_week===viewWeek;});
-  // Sort by away_abbr to maintain consistent order
-  wkGames.sort(function(a,b){return a.away_abbr<b.away_abbr?-1:1;});
-  grid.innerHTML='';
-  wkGames.forEach(function(g){
-    var isBuf=g.away_abbr==='BUF'||g.home_abbr==='BUF';
-    var isViewingCurrent=viewWeek===S.week;
-    var over=g.status==='final';
-    var awayWin=over&&g.away_score>g.home_score;
-    var homeWin=over&&g.home_score>g.away_score;
-    var myTeam=MY_TEAM&&(g.away_abbr===MY_TEAM||g.home_abbr===MY_TEAM);
-
-    var statusHtml;
-    if(over) statusHtml='<span class="gt-status final">Final</span>';
-    else if(isBuf&&isViewingCurrent) statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Live</span>';
-    else if(isViewingCurrent&&g.status==='live') statusHtml='<span class="gt-status live"><span class="gt-live-dot"></span>Q'+g.quarter+' &middot; '+fmt(g.secs)+'</span>';
-    else statusHtml='<span class="gt-status">'+(isViewingCurrent?'Scheduled':'Week '+viewWeek)+'</span>';
-
-    var playLink=(isBuf&&isViewingCurrent&&!over)?'<a class="gt-play-link" href="gridiron_game.html">PLAY NOW &rarr;</a>':'';
-
-    var tile=document.createElement('div');
-    tile.className='game-tile'+(isBuf||myTeam?' is-active':'')+(over?' is-over':'');
-    tile.innerHTML=
-      '<div class="gt-teams">'+
-        '<div class="gt-row'+(awayWin?' winner':'')+'"><span class="gt-abbr">'+g.away_abbr+'</span><span class="gt-score">'+g.away_score+'</span></div>'+
-        '<div class="gt-row'+(homeWin?' winner':'')+'"><span class="gt-abbr">'+g.home_abbr+'</span><span class="gt-score">'+g.home_score+'</span></div>'+
-      '</div>'+
-      '<div class="gt-meta">'+statusHtml+playLink+'</div>';
-    tile.style.cursor='pointer';
-    tile.onclick=(function(abbr){ return function(){ window.location='gridiron_team.html?team='+abbr; }; })(g.away_abbr);
-    grid.appendChild(tile);
-  });
-}
-
-function renderStandings(records){
-  var grid=document.getElementById('standings-grid');
-  grid.innerHTML='';
-  ['AFG','NFG'].forEach(function(conf){
-    var seeds=getPlayoffSeeds(conf,records);
-    var seedMap={};
-    seeds.forEach(function(t,i){seedMap[t.abbr]=i+1;});
-    var confDiv=document.createElement('div');
-    confDiv.innerHTML='<div class="conf-title">'+conf+' Conference</div>';
-    ['East','North','South','West'].forEach(function(div){
-      var divTeams=TEAMS.filter(function(t){return t.conf===conf&&t.div===div;});
-      divTeams.sort(function(a,b){return cmpTeam(a,b,records);});
-      var rows=divTeams.map(function(t){
-        var r=records[t.abbr];
-        var isMine=MY_TEAM?t.abbr===MY_TEAM:t.abbr==='BUF';
-        var seed=seedMap[t.abbr]?'<span style="color:'+(seedMap[t.abbr]<=4?'#f0c830':'#888')+'">'+seedMap[t.abbr]+'</span>':'';
-        return '<tr class="'+(isMine?'my-team':'')+'">'+
-          '<td class="seed-badge">'+seed+'</td>'+
-          '<td><a href="gridiron_team.html?team='+t.abbr+'">'+t.city+' '+t.name+'</a></td>'+
-          '<td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.tie+'</td>'+
-          '<td class="pct">'+pctStr(r)+'</td>'+
-          '<td class="pf">'+r.pf+'</td><td class="pa">'+r.pa+'</td></tr>';
+      let playLogHtml = (game.play_log || []).slice(0, 6).map(p => {
+        let cls = '';
+        if (p.includes('TOUCHDOWN')) cls = ' class="td"';
+        else if (p.includes('intercepted') || p.includes('fumbles')) cls = ' class="turnover"';
+        return `<div class="play-entry${cls}">${p}</div>`;
       }).join('');
-      confDiv.innerHTML+='<div class="div-block"><div class="div-title">'+conf+' '+div+'</div>'+
-        '<table class="std-tbl"><thead><tr><th></th><th>Team</th><th>W</th><th>L</th><th>T</th><th>PCT</th><th>PF</th><th>PA</th></tr></thead>'+
-        '<tbody>'+rows+'</tbody></table></div>';
-    });
-    grid.appendChild(confDiv);
-  });
-}
 
-function renderBracket(records){
-  var wrap=document.getElementById('bracket-wrap');
-  wrap.innerHTML='';
-  ['AFG','NFG'].forEach(function(conf){
-    var seeds=getPlayoffSeeds(conf,records);
-    var block=document.createElement('div');
-    block.className='bracket-conf';
-    var html='<div class="bracket-conf-title">'+conf+' Playoff Picture</div>';
-    var s1=seeds[0]; var r1=records[s1.abbr];
-    html+='<div class="bracket-bye">&#9655; #1 '+s1.abbr+' \u2014 BYE ('+recStr(r1)+')</div>';
-    [[1,6],[2,5],[3,4]].forEach(function(pair){
-      var sa=seeds[pair[0]],sb2=seeds[pair[1]];
-      if(!sa||!sb2)return;
-      var ra=records[sa.abbr],rb=records[sb2.abbr];
-      var amI_a=MY_TEAM?sa.abbr===MY_TEAM:sa.abbr==='BUF';
-      var amI_b=MY_TEAM?sb2.abbr===MY_TEAM:sb2.abbr==='BUF';
-      html+='<div class="bracket-matchup">'+
-        '<div class="bm-row"><span class="bm-num">'+(pair[0]+1)+'</span><span class="bm-name'+(amI_a?' my-team':'')+'">'+sa.city+' '+sa.name+'</span><span class="bm-rec">'+recStr(ra)+'</span></div>'+
-        '<div class="bm-vs">vs</div>'+
-        '<div class="bm-row"><span class="bm-num">'+(pair[1]+1)+'</span><span class="bm-name'+(amI_b?' my-team':'')+'">'+sb2.city+' '+sb2.name+'</span><span class="bm-rec">'+recStr(rb)+'</span></div>'+
-        '</div>';
-    });
-    if(seeds[7]){ var rb2=records[seeds[7].abbr]; html+='<div style="margin-top:8px;font-size:9px;color:#444;letter-spacing:1px;font-weight:700;">FIRST OUT: '+seeds[7].abbr+' ('+recStr(rb2)+')</div>'; }
-    block.innerHTML=html;
-    wrap.appendChild(block);
-  });
-}
+      let buttonsHtml = '';
+      if (isUserGame && game.status !== 'final') {
+        buttonsHtml = `
+          <div class="play-call-buttons">
+            <button class="play-btn" id="btn-run">▶ RUN</button>
+            <button class="play-btn" id="btn-pass">▶ PASS</button>
+            <button class="play-btn" id="btn-kick">⚡ KICK</button>
+          </div>
+        `;
+      }
 
-// ── Week nav ───────────────────────────────────────────────────
-function changeWeek(delta){ var nw=viewWeek+delta; if(nw<1||nw>17)return; viewWeek=nw; renderAll(); }
-
-async function advanceWeek(){
-  if(S.week>=17)return;
-  S.week++;
-  await sb.from('seasons').update({week:S.week}).eq('id',1);
-  viewWeek=S.week;
-  renderAll();
-}
-
-// ── Dev ────────────────────────────────────────────────────────
-function devToggle(){ document.getElementById('dev-panel').classList.toggle('open'); }
-
-async function devSimWeek(){
-  var wkGames=allGames.filter(function(g){return g.season_week===S.week&&g.status!=='final'&&g.away_abbr!=='BUF'&&g.home_abbr!=='BUF';});
-  for(var i=0;i<wkGames.length;i++){
-    var g=wkGames[i];
-    var as=g.away_score,hs=g.home_score,q=g.quarter,secs=g.secs;
-    while(true){
-      var burn=55+Math.floor(Math.random()*70); secs=Math.max(0,secs-burn);
-      var r=Math.random();
-      if(r<0.045){var pts=Math.random()>0.06?7:6;Math.random()<0.5?as+=pts:hs+=pts;}
-      else if(r<0.065){Math.random()<0.5?as+=3:hs+=3;}
-      if(secs<=0){q++;secs=900;if(q>4){q=4;secs=0;break;}}
+      return `
+        <div class="${cardClass}">
+          <div class="game-header">
+            <div class="game-status">${liveIndicator} ${timeStr}</div>
+            ${isUserGame ? '<div class="game-log-toggle">GAME LOG</div>' : ''}
+          </div>
+          <div class="game-body">
+            <div class="teams-scores">
+              <div class="team-left">
+                <div class="team-info">${game.away_abbr} (${game.away_score}-${game.home_score})</div>
+                <div class="team-name">${awayTeam.name}</div>
+              </div>
+              <div class="score-display">
+                <span class="score">${game.away_score}</span>
+                <span class="possession-arrow">${possession}</span>
+                <span class="score">${game.home_score}</span>
+              </div>
+              <div class="team-right">
+                <div class="team-info">(${game.away_score}-${game.home_score}) ${game.home_abbr}</div>
+                <div class="team-name">${homeTeam.name}</div>
+              </div>
+            </div>
+            <div class="field-status">
+              <span class="down-distance">▶ ${downDist}</span>
+              <span class="yardline">${yardline}</span>
+            </div>
+            <div class="play-log">${playLogHtml}</div>
+            ${buttonsHtml}
+          </div>
+        </div>
+      `;
     }
-    var w=as>hs?'away':hs>as?'home':'tie';
-    await sb.from('games').update({away_score:as,home_score:hs,quarter:q,secs:0,status:'final',winner:w,updated_at:new Date().toISOString()}).eq('id',g.id);
-  }
-  await loadWeekGames();
-  renderAll();
-}
 
-async function devNextWeek(){ await devSimWeek(); if(S.week<17){ S.week++; await sb.from('seasons').update({week:S.week}).eq('id',1); viewWeek=S.week; } await loadWeekGames(); renderAll(); }
+    async function submitPlayCall(gameId, playType) {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) {
+        alert('Please sign in to make play calls.');
+        return;
+      }
 
-async function devResetSeason(){
-  await sb.from('games').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  await sb.from('seasons').delete().eq('id',1);
-  await sb.from('player_stats').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  location.reload();
-}
+      // Insert play call into database (for future use)
+      await supabase.from('play_calls').insert({
+        game_id: gameId,
+        user_id: user.id,
+        play_type: playType,
+        created_at: new Date().toISOString(),
+      });
 
-document.addEventListener('keydown',function(e){if(e.key==='`'||e.key==='~')devToggle();});
+      // Show flash
+      const btn = event.target;
+      const flash = document.createElement('div');
+      flash.className = 'vote-flash';
+      flash.textContent = 'Vote submitted!';
+      btn.parentElement.appendChild(flash);
+      setTimeout(() => flash.remove(), 2500);
+    }
 
-// ── Boot ───────────────────────────────────────────────────────
-initSeason();
-// Call tick function every 5 seconds (client-driven until cron is set up)
-setInterval(tickGames, 5000);
-</script>
+    // Dev panel
+    document.querySelector('.dev-badge').addEventListener('click', () => {
+      document.getElementById('dev-panel').classList.toggle('visible');
+    });
+
+    document.getElementById('sim-day-btn').addEventListener('click', async () => {
+      const status = document.getElementById('dev-status');
+      status.textContent = 'Simulating...';
+      for (let i = 0; i < 50; i++) {
+        await callTickGames();
+        await new Promise(r => setTimeout(r, 100));
+      }
+      status.textContent = 'Complete';
+    });
+
+    document.getElementById('reset-season-btn').addEventListener('click', async () => {
+      if (!confirm('Reset entire season?')) return;
+      const status = document.getElementById('dev-status');
+      status.textContent = 'Resetting...';
+      
+      await supabase.from('games').delete().neq('id', 0);
+      await supabase.from('seasons').delete().neq('id', 0);
+      
+      location.reload();
+    });
+
+    // Backtick to toggle dev panel
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '`') {
+        document.getElementById('dev-panel').classList.toggle('visible');
+      }
+    });
+
+    initSeason();
+  </script>
 </body>
 </html>
